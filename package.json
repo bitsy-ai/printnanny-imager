@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "lint:fix": "eslint --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore .",
+    "lint": "eslint --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --ignore-path .gitignore ."
   },
   "dependencies": {
     "@headlessui/vue": "^1.7.0",
@@ -16,6 +18,7 @@
     "@tailwindcss/forms": "^0.5.3",
     "@tailwindcss/typography": "^0.5.7",
     "@tauri-apps/api": "^1.0.2",
+    "pinia": "^2.0.22",
     "vee-validate": "^4.6.7",
     "vue": "^3.2.37",
     "vue-router": "^4.1.5",
@@ -25,7 +28,11 @@
     "@tauri-apps/cli": "^1.0.5",
     "@types/node": "^18.7.10",
     "@vitejs/plugin-vue": "^3.0.1",
+    "@vue/eslint-config-prettier": "^7.0.0",
+    "@vue/eslint-config-typescript": "^11.0.1",
     "autoprefixer": "^10.4.8",
+    "eslint": "^8.23.0",
+    "eslint-plugin-vue": "^9.4.0",
     "postcss": "^8.4.16",
     "tailwindcss": "^3.1.8",
     "typescript": "^4.6.4",
