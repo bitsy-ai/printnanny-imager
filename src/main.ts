@@ -1,5 +1,5 @@
 import { createApp } from "vue";
-import { createPinia } from 'pinia'
+import { createPinia } from "pinia";
 
 const pinia = createPinia();
 import router from "./router";

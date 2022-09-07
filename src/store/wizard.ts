@@ -9,7 +9,7 @@ export const useWizardStore = defineStore({
     loading: false,
     savedFormValues: {
       hostname: "printnanny",
-      username: "pi"
+      username: "pi",
     },
     savedCloudInit: {
       userData: `#cloud-config
@@ -27,13 +27,11 @@ timezone: America/Los_Angeles
 wifis:
 renderer: networkd
 # custom configuration goes here
-`
-    }
+`,
+    },
   }),
-  actions: {
-
-  }
-})
+  actions: {},
+});
 
 if (import.meta.hot) {
   import.meta.hot.accept(acceptHMRUpdate(useWizardStore, import.meta.hot));
