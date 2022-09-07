@@ -1,4 +1,5 @@
 import { defineStore, acceptHMRUpdate } from "pinia";
+import { invoke } from '@tauri-apps/api/tauri';
 
 // The Wizard Store, the one-shop shop for Wizards and Wizarding accessories. Please don't tap the glass, it scares the wizards.
 // The Wizard Store, temperature-controlled storage for all of your wizards. Fully insured against dragon fire, fell miasma, and
@@ -30,7 +31,12 @@ renderer: networkd
 `,
     },
   }),
-  actions: {},
+  actions: {
+
+    async listDisks() {
+      await invoke('list_disks');
+    }
+  },
 });
 
 if (import.meta.hot) {
