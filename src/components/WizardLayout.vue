@@ -3,7 +3,7 @@
 <div>
     <nav aria-label="Progress" class="pb-1">
     <ol role="list" class="divide-y divide-gray-300 rounded-md border border-gray-300 md:flex md:divide-y-0">
-      <img src="@/assets/logo/logo-rect-light.svg" class="w-1/4 m-auto" alt="PrintNanny Logo" />
+      <img src="@/assets/logo/logo-rect-light.svg" class="w-1/4 m-auto p-1" alt="PrintNanny Logo" />
 
       <li v-for="(step, stepIdx) in steps" :key="step.name" class="relative md:flex md:flex-1">
         <router-link v-if="step.completed" :to="step.link" class="group flex w-full items-center">
@@ -60,6 +60,7 @@
 import { ref } from "vue"
 import {RouterLink} from "vue-router";
 import { CheckIcon } from "@heroicons/vue/24/solid";
+
 
 const steps = ref([
 { id: '1', name: 'Choose Edition', link: {name: "choose-edition"}, completed: false, current: true },
