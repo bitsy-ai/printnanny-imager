@@ -64,7 +64,7 @@ import { CheckIcon } from "@heroicons/vue/24/solid";
 
 const steps = ref([
 { id: '1', name: 'Choose Edition', link: {name: "choose-edition"}, completed: false, current: true },
-{ id: '2', name: 'Configure PrintNanny', link: {name: "configure-edition", params: {edition: "octoprint"}}, completed: false, current: false },
-{ id: '3', name: 'SD Card', link: {name: "sd-card"}, completed: false, current: false  },
+{ id: '2', name: 'Configure', link: {name: "configure-edition", params: {edition: "octoprint"}}, completed: false, current: false },
+{ id: '3', name: 'Create SD Card', link: {name: "sd-card"}, completed: false, current: false  },
 ]);
 </script>

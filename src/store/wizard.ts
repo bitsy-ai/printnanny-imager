@@ -6,7 +6,29 @@ export const useWizardStore = defineStore({
   id: "wizard",
   state: () => ({
     edition: undefined as string | undefined,
-    loading: false
+    loading: false,
+    savedFormValues: {
+      hostname: "printnanny",
+      username: "pi"
+    },
+    savedCloudInit: {
+      userData: `#cloud-config
+manage_etc_hosts: true
+users:
+- default
+- name: pi
+  groups: users,adm,dialout,audio,netdev,video,plugdev,cdrom,games,input,gpio,spi,i2c,render,sudo
+  shell: /bin/bash
+  lock_passwd: true
+
+timezone: America/Los_Angeles
+`,
+      networkData: `version:2
+wifis:
+renderer: networkd
+# custom configuration goes here
+`
+    }
   }),
   actions: {
 
