@@ -1162,6 +1162,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "21dec9db110f5f872ed9699c3ecf50cf16f423502706ba5c72462e28d3157573"
 
 [[package]]
+name = "human_bytes"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "88a0d4dc39ec942e44c1c306aa196da67f2bd6a30dc7b4a475465c13ccf28817"
+
+[[package]]
 name = "ico"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2034,6 +2040,7 @@ checksum = "925383efa346730478fb4838dbe9137d2a47675ad789c546d150a6e1dd4ab31c"
 name = "printnanny-imager"
 version = "0.0.0"
 dependencies = [
+ "human_bytes",
  "serde",
  "serde_json",
  "sysinfo",

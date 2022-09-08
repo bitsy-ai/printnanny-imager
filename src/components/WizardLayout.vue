@@ -1,133 +1,39 @@
-<!-- This example requires Tailwind CSS v2.0+ -->
 <template>
-  <div>
-    <nav aria-label="Progress" class="pb-1">
-      <ol
-        role="list"
-        class="divide-y divide-gray-300 rounded-md border border-gray-300 md:flex md:divide-y-0"
-      >
+<div class="flex grid grid-rows-3">
+    <div class="flex-1 row-span-1 bg-stone-50">
         <img
           src="@/assets/logo/logo-rect-light.svg"
-          class="w-1/4 m-auto p-1"
+          class="w-3/4 m-auto pt-2 pb-2"
           alt="PrintNanny Logo"
         />
 
-        <li
-          v-for="(step, stepIdx) in steps"
-          :key="step.name"
-          class="relative md:flex md:flex-1"
-        >
-          <router-link
-            v-if="step.completed"
-            :to="step.link"
-            class="group flex w-full items-center"
-          >
-            <span class="flex items-center px-6 py-4 text-sm font-medium">
-              <span
-                class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-indigo-600 group-hover:bg-indigo-800"
-              >
-                <CheckIcon class="h-6 w-6 text-white" aria-hidden="true" />
-              </span>
-              <span class="ml-4 text-sm font-medium text-gray-900">{{
-                step.name
-              }}</span>
-            </span>
-          </router-link>
-          <router-link
-            v-else-if="step.current"
-            :to="step.link"
-            class="flex items-center px-6 py-4 text-sm font-medium"
-            aria-current="step"
-          >
-            <span
-              class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border-2 border-indigo-600"
-            >
-              <span class="text-indigo-600">{{ step.id }}</span>
-            </span>
-            <span class="ml-4 text-sm font-medium text-indigo-600">{{
-              step.name
-            }}</span>
-          </router-link>
-          <router-link v-else :to="step.link" class="group flex items-center">
-            <span class="flex items-center px-6 py-4 text-sm font-medium">
-              <span
-                class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border-2 border-gray-300 group-hover:border-gray-400"
-              >
-                <span class="text-gray-500 group-hover:text-gray-900">{{
-                  step.id
-                }}</span>
-              </span>
-              <span
-                class="ml-4 text-sm font-medium text-gray-500 group-hover:text-gray-900"
-                >{{ step.name }}</span
-              >
-            </span>
-          </router-link>
-          <template v-if="stepIdx !== steps.length - 1">
-            <!-- Arrow separator for lg screens and up -->
-            <div
-              class="absolute top-0 right-0 hidden h-full w-5 md:block"
-              aria-hidden="true"
-            >
-              <svg
-                class="h-full w-full text-gray-300"
-                viewBox="0 0 22 80"
-                fill="none"
-                preserveAspectRatio="none"
-              >
-                <path
-                  d="M0 -2L20 40L0 82"
-                  vector-effect="non-scaling-stroke"
-                  stroke="currentcolor"
-                  stroke-linejoin="round"
-                />
-              </svg>
-            </div>
-          </template>
-        </li>
-      </ol>
-    </nav>
-    <RouterView v-slot="{ Component }">
-      <template v-if="Component">
-        <Transition mode="out-in" name="fade">
-          <Suspense>
-            <!-- main content -->
-            <component :is="Component"></component>
-            <!-- loading state -->
-            <template #fallback> Loading... </template>
-          </Suspense>
-        </Transition>
-      </template>
-    </RouterView>
-  </div>
+    </div>
+
+    <div class="bg-indigo-400 grid grid-cols-2 gap-4 flex flex-1 justify-items-center text-base">
+        <HardwareSelect2 />
+        <div class="flex-1">
+            <p class="text-stone-50 prose prose-xl text-center">Operating System</p>
+            <button class="bg-stone-300 hover:bg-stone-200 text-stone-900 font-bold py-2 px-4 border-b-4 border-stone-500 hover:border-stone-300 rounded">Choose Operating System</button>
+        </div>
+        <div  class="flex-1">
+            <p class="text-stone-50 prose prose-xl text-center">Storage</p>
+            <button class="bg-stone-300 hover:bg-stone-200 text-stone-900 font-bold py-2 px-4 border-b-4 border-stone-500 hover:border-stone-300 rounded">Choose Storage</button>
+        </div>
+        <div  class="flex-1">
+            <p class="text-stone-50 prose prose-xl text-center">Configure</p>
+            <button class="bg-stone-300 hover:bg-stone-200 text-stone-900 font-bold py-2 px-4 border-b-4 border-stone-500 hover:border-stone-300 rounded">Configure System</button>
+        </div>
+    </div>
+    <div class="flex flex-1 row-span-1 bg-indigo-400 min-h-full w-full justify-items-center justify-center text-base items-center">
+        <div class="flex-1 items-center justify-items-center">
+            <p class="text-stone-50 prose prose-xl text-center">Hardware</p>
+            <button class="m-auto bg-stone-300 hover:bg-stone-200 text-stone-900 font-bold py-2 px-4 border-b-4 border-stone-500 hover:border-stone-300 rounded">Write Image</button>
+        </div>
+    </div>
+</div>
 </template>
-
 <script setup lang="ts">
-import { ref } from "vue";
-import { RouterLink } from "vue-router";
-import { CheckIcon } from "@heroicons/vue/24/solid";
+import HardwareSelect from './HardwareSelect.vue';
+import HardwareSelect2 from './HardwareSelect2.vue';
 
-const steps = ref([
-  {
-    id: "1",
-    name: "Choose Edition",
-    link: { name: "choose-edition" },
-    completed: false,
-    current: true,
-  },
-  {
-    id: "2",
-    name: "Configure",
-    link: { name: "configure-edition", params: { edition: "octoprint" } },
-    completed: false,
-    current: false,
-  },
-  {
-    id: "3",
-    name: "Create SD Card",
-    link: { name: "sd-card" },
-    completed: false,
-    current: false,
-  },
-]);
 </script>

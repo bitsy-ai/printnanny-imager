@@ -1,11 +1,13 @@
 import { defineStore, acceptHMRUpdate } from "pinia";
 import { invoke } from '@tauri-apps/api/tauri';
+import type { SingleBoardComputer } from "../types";
 
 // The Wizard Store, the one-shop shop for Wizards and Wizarding accessories. Please don't tap the glass, it scares the wizards.
 // The Wizard Store, temperature-controlled storage for all of your wizards. Fully insured against dragon fire, fell miasma, and
 export const useWizardStore = defineStore({
   id: "wizard",
   state: () => ({
+    hardware: undefined as undefined | SingleBoardComputer,
     edition: undefined as string | undefined,
     loading: false,
     savedFormValues: {
@@ -34,7 +36,9 @@ renderer: networkd
   actions: {
 
     async listDisks() {
-      await invoke('list_disks');
+      const result = await invoke('list_disks') as string;
+      const disks = JSON.parse(result)
+      console.log("Fetched disks", disks)
     }
   },
 });
