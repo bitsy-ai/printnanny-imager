@@ -10,11 +10,10 @@
     </div>
 
     <div class="bg-indigo-400 grid grid-cols-2 gap-4 flex flex-1 justify-items-center text-base">
-        <HardwareSelect2 />
-        <div class="flex-1">
-            <p class="text-stone-50 prose prose-xl text-center">Operating System</p>
-            <button class="bg-stone-300 hover:bg-stone-200 text-stone-900 font-bold py-2 px-4 border-b-4 border-stone-500 hover:border-stone-300 rounded">Choose Operating System</button>
-        </div>
+        <CompactSelect store-attr="board" :options="Object.values(boards)" label="Hardware: "/>
+        <CompactSelect store-attr="os" :options="Object.values(operatingSystems)" label="Operating System: "/>
+
+
         <div  class="flex-1">
             <p class="text-stone-50 prose prose-xl text-center">Storage</p>
             <button class="bg-stone-300 hover:bg-stone-200 text-stone-900 font-bold py-2 px-4 border-b-4 border-stone-500 hover:border-stone-300 rounded">Choose Storage</button>
@@ -33,7 +32,11 @@
 </div>
 </template>
 <script setup lang="ts">
-import HardwareSelect from './HardwareSelect.vue';
-import HardwareSelect2 from './HardwareSelect2.vue';
+import HardwareSelect from './select/HardwareSelect.vue';
+import OperatingSystemSelect from './select/OperatingSystemSelect.vue';
+import CompactSelect from './select/CompactSelect.vue';
+import boards from "@/data/boards";
+import operatingSystems from "@/data/os";
+
 
 </script>

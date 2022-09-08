@@ -1,13 +1,15 @@
 import { defineStore, acceptHMRUpdate } from "pinia";
 import { invoke } from '@tauri-apps/api/tauri';
-import type { SingleBoardComputer } from "../types";
-
+import type { OperatingSystem, SingleBoardComputer } from "../types";
+import boards from "@/data/boards";
+import operatingSytems from "@/data/os";
 // The Wizard Store, the one-shop shop for Wizards and Wizarding accessories. Please don't tap the glass, it scares the wizards.
 // The Wizard Store, temperature-controlled storage for all of your wizards. Fully insured against dragon fire, fell miasma, and
 export const useWizardStore = defineStore({
   id: "wizard",
   state: () => ({
-    hardware: undefined as undefined | SingleBoardComputer,
+    board: Object.values(boards)[0] as SingleBoardComputer,
+    os: Object.values(operatingSytems)[0] as OperatingSystem,
     edition: undefined as string | undefined,
     loading: false,
     savedFormValues: {
