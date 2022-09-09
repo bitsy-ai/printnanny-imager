@@ -1,8 +1,13 @@
 import { defineStore, acceptHMRUpdate } from "pinia";
 import { invoke } from '@tauri-apps/api/tauri';
-import type { OperatingSystem, SingleBoardComputer } from "../types";
+import type { OperatingSystem, RemoveableDisk, SingleBoardComputer } from "../types";
 import boards from "@/data/boards";
 import operatingSytems from "@/data/os";
+import { Command } from '@tauri-apps/api/shell'
+import { platform } from '@tauri-apps/api/os';
+import { listRemoveableDisks } from "../utils/disk";
+import { threadId } from "worker_threads";
+
 // The Wizard Store, the one-shop shop for Wizards and Wizarding accessories. Please don't tap the glass, it scares the wizards.
 // The Wizard Store, temperature-controlled storage for all of your wizards. Fully insured against dragon fire, fell miasma, and
 export const useWizardStore = defineStore({
@@ -10,6 +15,9 @@ export const useWizardStore = defineStore({
   state: () => ({
     board: Object.values(boards)[0] as SingleBoardComputer,
     os: Object.values(operatingSytems)[0] as OperatingSystem,
+    loadingDisks: false,
+    removeableDisks: [] as Array<RemoveableDisk>,
+    selectedDisk: undefined as undefined | RemoveableDisk,
     edition: undefined as string | undefined,
     loading: false,
     savedFormValues: {
@@ -37,10 +45,10 @@ renderer: networkd
   }),
   actions: {
 
-    async listDisks() {
-      const result = await invoke('list_disks') as string;
-      const disks = JSON.parse(result)
-      console.log("Fetched disks", disks)
+    async listRemoveableDrives(): Promise<Array<RemoveableDisk>> {
+      this.$patch({ loadingDisks: true });
+      let disks = await listRemoveableDisks();
+      this.$patch({ removeableDisks: disks, loadingDisks: false })
     }
   },
 });

@@ -12,7 +12,34 @@
   },
   "tauri": {
     "allowlist": {
-      "all": true
+      "os": {
+        "all": true
+      },
+      "shell": {
+        "all": true,
+        "execute": true,
+        "sidecar": true,
+        "open": true,
+        "scope": [
+          {
+            "name": "list-diskdrive--windows",
+            "cmd": "powershell.exe",
+            "args": [
+              "GET-WMIOBJECT",
+              "-query",
+              "'SELECT * from win32_diskdrive' | ConvertTo-Json"
+            ]
+          },
+          {
+            "name": "list-diskdrive--linux",
+            "cmd": "lsblk",
+            "args": [
+              "--output-all",
+              "--json"
+            ]
+          }
+        ]
+      }
     },
     "bundle": {
       "active": true,
