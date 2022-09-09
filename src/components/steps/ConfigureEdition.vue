@@ -1,5 +1,8 @@
 <template>
   <div class="container m-auto">
+    <h2 class="text-gray-900 text-center text-3xl mb-4 mt-4">
+      Configure Operating System
+    </h2>
     <div class="sm:hidden">
       <label for="tabs" class="sr-only">Select configuration mode</label>
       <select

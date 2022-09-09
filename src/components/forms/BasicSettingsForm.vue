@@ -446,7 +446,6 @@ import timezoneList from "@/utils/timezone";
 import keyboardLayoutList from "@/utils/keyboard";
 import { useWizardStore } from "@/store/wizard";
 import { Form, Field, ErrorMessage, configure } from "vee-validate";
-import keyboard from "../../utils/keyboard";
 
 configure({
   validateOnBlur: true,

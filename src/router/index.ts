@@ -1,7 +1,8 @@
 import { createRouter, createMemoryHistory } from "vue-router";
-import WizardLayout from "@/components/WizardLayout.vue";
-import ChooseEdition from "@/components/steps/ChooseEdition.vue";
-import ConfigureEdition from "@/components/steps/ConfigureEdition.vue";
+import HomeLayout from "@/components/HomeLayout.vue";
+import ChooseImage from "@/components/steps/ChooseImage.vue";
+import StorageSelect from "@/components/select/StorageSelect.vue";
+import FlashImage from "@/components/steps/FlashImage.vue";
 
 const router = createRouter({
   history: createMemoryHistory(),
@@ -9,28 +10,35 @@ const router = createRouter({
     {
       path: "/",
       components: {
-        default: WizardLayout,
+        ChooseImage: ChooseImage,
+        default: HomeLayout,
       },
       children: [
         {
           path: "",
-          name: "choose-edition",
+          name: "select-image",
           components: {
-            default: ChooseEdition,
+            ChooseImage: ChooseImage,
+            StorageSelect: StorageSelect,
+            FlashImage: FlashImage,
           },
         },
         {
-          path: "configure/:edition",
-          name: "configure-edition",
+          path: "select-storage",
+          name: "select-storage",
           components: {
-            default: ConfigureEdition,
+            ChooseImage: ChooseImage,
+            StorageSelect: StorageSelect,
+            FlashImage: FlashImage,
           },
         },
         {
-          path: "sd-card",
-          name: "sd-card",
+          path: "flash-image",
+          name: "flash-image",
           components: {
-            default: ChooseEdition,
+            ChooseImage: ChooseImage,
+            StorageSelect: StorageSelect,
+            FlashImage: FlashImage,
           },
         },
       ],

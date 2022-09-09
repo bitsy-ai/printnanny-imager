@@ -3,14 +3,16 @@
     windows_subsystem = "windows"
 )]
 
+use printnanny_imager::disks::get_serializable_disks;
+
 #[tauri::command]
-fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
+fn list_disks() -> String {
+    get_serializable_disks()
 }
 
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![greet])
+        .invoke_handler(tauri::generate_handler![list_disks])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

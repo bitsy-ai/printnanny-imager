@@ -12,7 +12,52 @@
   },
   "tauri": {
     "allowlist": {
-      "all": true
+      "dialog": {
+        "all": true
+      },
+      "os": {
+        "all": true
+      },
+      "shell": {
+        "all": true,
+        "execute": true,
+        "sidecar": true,
+        "open": true,
+        "scope": [
+          {
+            "name": "list-diskdrive--windows",
+            "cmd": "powershell.exe",
+            "args": [
+              "GET-WMIOBJECT",
+              "-query",
+              "'SELECT * from win32_diskdrive' | ConvertTo-Json"
+            ]
+          },
+          {
+            "name": "list-diskdrive--linux",
+            "cmd": "lsblk",
+            "args": [
+              "--output-all",
+              "--json"
+            ]
+          },
+          {
+            "name": "write-image--linux",
+            "cmd": "pkexec",
+            "args": [
+              "dd",
+              "bs=4M",
+              "status=progress",
+              {
+                "validator": "if=\\S+"
+              },
+              {
+                "validator": "of=\\S+"
+              }
+            ]
+          }
+        ]
+      }
     },
     "bundle": {
       "active": true,
@@ -59,7 +104,7 @@
         "height": 600,
         "resizable": true,
         "title": "PrintNanny Imager",
-        "width": 800
+        "width": 1200
       }
     ]
   }
