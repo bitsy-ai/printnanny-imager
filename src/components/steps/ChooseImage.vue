@@ -1,6 +1,6 @@
 <template>
-    <div v-if="store.imageFile">
-        <p class="text-center text-stone-50 text-sm truncate">{{ truncate(filename(store.imageFile)) }}</p>
+    <div v-if="store.selectedImageFile">
+        <p class="text-center text-stone-50 text-sm truncate">{{ truncate(filename(store.selectedImageFile)) }}</p>
         <button @click="clearSelection" class="text-center block mx-4 my-4 h-12 w-48 block bg-indigo-500 hover:bg-indigo-400 text-white font-bold py-2 px-4 border-b-4 border-indigo-700 hover:border-indigo-500 rounded">
             Clear selection
         </button>
@@ -42,14 +42,13 @@ async function openFile(){
         }]
     });
     if (selected){
-        store.$patch({ imageFile: selected});
-        router.push({name: "choose-disk"})
-
+        store.$patch({ selectedImageFile: selected});
+        router.push({name: "choose-disk"});
     }
 }
 
 function clearSelection(){
-    store.$patch({ imageFile: null});
+    store.$patch({ selectedImageFile: null});
 }
 
 </script>

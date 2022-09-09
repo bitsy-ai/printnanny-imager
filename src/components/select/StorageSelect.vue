@@ -1,7 +1,16 @@
 <template>
-<div class="flex-1">
-    <p class="text-stone-50 text-2xl font-medium text-center">Storage</p>
-    <button @click="onClick" class="bg-stone-300 hover:bg-stone-200 text-stone-900 font-bold py-2 px-4 border-b-4 border-stone-500 hover:border-stone-300 rounded">{{ store.selectedDisk !== undefined ? `${store.selectedDisk?.vendor} ${store.selectedDisk?.model} (${store.selectedDisk?.size})` :'Choose Storage'}}</button>
+<div class="flex-1" v-if="!active">
+    <button disabled class="text-center block mx-4 my-4 h-12 w-48 block bg-indigo-500 text-white font-bold py-2 px-4 border-b-4 border-indigo-700 rounded disabled:opacity-50">
+            Choose Disk
+    </button>  
+</div>
+<div class="flex-1" v-else>
+    <span class="text-center text-stone-50 text-sm truncate" v-if="store.selectedDisk !== undefined">{{store.selectedDisk?.vendor}} {{store.selectedDisk?.model}} ({{store.selectedDisk?.size}})</span>
+    <button 
+        @click="onClick" 
+        class="text-center block mx-4 my-4 h-12 w-48 block bg-indigo-500 hover:bg-indigo-400 text-white font-bold py-2 px-4 border-b-4 border-indigo-700 hover:border-indigo-500 rounded">
+        {{ store.selectedDisk !== undefined ? `Clear selection` :'Choose Storage'}}
+    </button>
     <TransitionRoot as="template" :show="show">
         <Dialog as="div" class="relative z-10" @close="show = false">
         <TransitionChild as="template" enter="ease-out duration-300" enter-from="opacity-0" enter-to="opacity-100" leave="ease-in duration-200" leave-from="opacity-100" leave-to="opacity-0">
@@ -16,7 +25,10 @@
                     <div class="sm:flex sm:items-start">
                     <div class="mt-3 w-full text-center sm:mt-0 sm:ml-4 sm:text-left">
                         <DialogTitle as="h3" class="text-lg font-medium leading-6 text-gray-900">Select removeable USB storage:</DialogTitle>
-                        <div class="mt-2">
+                        <div v-if="store.loading">
+                            <CustomSpinner text="Loading removeable disks..."/>
+                        </div>
+                        <div class="mt-2" v-else>
                             <ul class="w-full text-sm font-medium text-gray-900 bg-white rounded-lg border border-gray-200 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                             <li class="w-full rounded-t-lg border-b border-gray-200 dark:border-gray-600" v-for="disk in store.removeableDisks" :key="disk.name">
                                 <div class="flex items-center pl-3">
@@ -44,18 +56,26 @@
 </div>
 </template>
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router';
+
 import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from '@headlessui/vue'
 import { ExclamationTriangleIcon } from '@heroicons/vue/24/outline'
 import { useWizardStore } from '../../store/wizard';
+import CustomSpinner from '../spinner/CustomSpinner.vue';
 
 
-
+const router = useRouter();
+const key = "choose-disk";
 const store = useWizardStore();
 const show = ref(false);
-const onClick = () => {
-    console.log("clicked")
+
+const active = computed(() => router.currentRoute.value.name == key);
+
+
+const onClick = async () => {
     show.value = true;
+    await store.listRemoveableDrives();
 }
 
 </script>
