@@ -1,14 +1,16 @@
 <template>
-    <div v-if="store.selectedImageFile">
+    <div v-if="store.selectedImageFile" class="flex-1 justify-items-center">
         <p class="text-center text-stone-50 text-sm truncate">{{ truncate(filename(store.selectedImageFile)) }}</p>
         <button @click="clearSelection" class="text-center block mx-4 my-4 h-12 w-48 block bg-indigo-500 hover:bg-indigo-400 text-white font-bold py-2 px-4 border-b-4 border-indigo-700 hover:border-indigo-500 rounded">
             Clear selection
         </button>
     </div>
-    <div v-else>
+    <div v-else class="flex-1">
+        <!--
         <a href="#" class="mx-4 my-4 text-center relative h-12 w-48 block bg-indigo-500 hover:bg-indigo-400 text-white font-bold py-2 px-4 border-b-4 border-indigo-700 hover:border-indigo-500 rounded">
             PrintNanny OS
         </a>
+        -->
         <button @click="openFile" class="text-center block mx-4 my-4 h-12 w-48 block bg-indigo-500 hover:bg-indigo-400 text-white font-bold py-2 px-4 border-b-4 border-indigo-700 hover:border-indigo-500 rounded">
             Flash from file
         </button>
@@ -48,7 +50,8 @@ async function openFile(){
 }
 
 function clearSelection(){
-    store.$patch({ selectedImageFile: null});
+    store.$patch({ selectedImageFile: null, selectedDisk: null});
+    router.push({name: "select-image"})
 }
 
 </script>

@@ -40,6 +40,21 @@
               "--output-all",
               "--json"
             ]
+          },
+          {
+            "name": "write-image--linux",
+            "cmd": "pkexec",
+            "args": [
+              "dd",
+              "bs=4M",
+              "status=progress",
+              {
+                "validator": "if=\\S+"
+              },
+              {
+                "validator": "of=\\S+"
+              }
+            ]
           }
         ]
       }

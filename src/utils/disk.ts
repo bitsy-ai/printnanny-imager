@@ -20,12 +20,13 @@ function parseLinuxDisks(jsonStr: string): Array<RemoveableDisk> {
 
     return {
       key: device.name,
-      name: device.name,
-      serial: device.serial,
       model: device.model,
-      vendor: device.vendor,
+      name: device.name,
+      path: device.path,
       partitions: partitions,
-      size: device.size
+      serial: device.serial,
+      size: device.size,
+      vendor: device.vendor
     } as RemoveableDisk
   })
 }
@@ -52,7 +53,30 @@ async function listRemoveableDisks(): Promise<Array<RemoveableDisk>> {
   }
 }
 
+
+async function flashImage(disk: RemoveableDisk, imagePath: string) {
+  const platformName = await platform();
+  switch (platformName) {
+    case 'darwin':
+      break
+    case 'linux':
+      const linuxCmd = await new Command('write-image--linux', ["dd", "bs=4M", "status=progress", `if=${imagePath}`, `of=${disk.path}`]);
+      linuxCmd.on('close', data => {
+        console.log(`command finished with code ${data.code} and signal ${data.signal}`)
+      });
+      linuxCmd.on('error', error => console.error(`command error: "${error}"`));
+      linuxCmd.stdout.on('data', line => console.log(`command stdout: "${line}"`));
+      linuxCmd.stderr.on('data', line => console.log(`command stderr: "${line}"`));
+      const child = await linuxCmd.spawn();
+      console.log("flashImage pid: ", child.pid);
+      break
+    case 'win32':
+      break
+  }
+}
+
 export {
   listRemoveableDisks,
-  parseLinuxDisks
+  parseLinuxDisks,
+  flashImage
 }

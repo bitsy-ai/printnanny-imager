@@ -1,15 +1,21 @@
 <template>
-<div class="flex-1" v-if="!active">
+<div class="flex-1" v-if="!active && store.selectedDisk == null">
     <button disabled class="text-center block mx-4 my-4 h-12 w-48 block bg-indigo-500 text-white font-bold py-2 px-4 border-b-4 border-indigo-700 rounded disabled:opacity-50">
             Choose Disk
     </button>  
 </div>
+<div class="flex-1" v-else-if="!active && store.selectedDisk !== null">
+    <p class="text-center text-stone-50 text-sm truncate">{{store.selectedDisk?.vendor}} {{store.selectedDisk?.model}} ({{store.selectedDisk?.size}})</p>
+        <button @click="clearSelection" class="text-center block mx-4 my-4 h-12 w-48 block bg-indigo-500 hover:bg-indigo-400 text-white font-bold py-2 px-4 border-b-4 border-indigo-700 hover:border-indigo-500 rounded">
+            Clear selection
+        </button>
+</div>
 <div class="flex-1" v-else>
-    <span class="text-center text-stone-50 text-sm truncate" v-if="store.selectedDisk !== undefined">{{store.selectedDisk?.vendor}} {{store.selectedDisk?.model}} ({{store.selectedDisk?.size}})</span>
+    <span class="text-center text-stone-50 text-sm truncate" v-if="store.selectedDisk !== null">{{store.selectedDisk?.vendor}} {{store.selectedDisk?.model}} ({{store.selectedDisk?.size}})</span>
     <button 
         @click="onClick" 
         class="text-center block mx-4 my-4 h-12 w-48 block bg-indigo-500 hover:bg-indigo-400 text-white font-bold py-2 px-4 border-b-4 border-indigo-700 hover:border-indigo-500 rounded">
-        {{ store.selectedDisk !== undefined ? `Clear selection` :'Choose Storage'}}
+        {{ store.selectedDisk !== null ? `Clear selection` :'Choose Storage'}}
     </button>
     <TransitionRoot as="template" :show="show">
         <Dialog as="div" class="relative z-10" @close="show = false">
@@ -58,28 +64,34 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router';
-
+import { useStore } from '@/store';
 import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from '@headlessui/vue'
 import { ExclamationTriangleIcon } from '@heroicons/vue/24/outline'
-import { useWizardStore } from '../../store/wizard';
 import CustomSpinner from '../spinner/CustomSpinner.vue';
 
 
 const router = useRouter();
 const key = "select-storage";
-const store = useWizardStore();
+const store = useStore();
 const show = ref(false);
 
 const active = computed(() => router.currentRoute.value.name == key);
 
 function onSelect(){
     show.value = false;
-    router.push({name: "flash-image"})
+    console.log("Selected target disk:", store.selectedDisk);
+    router.push({name: "flash-image"});
 }
 
 const onClick = async () => {
     show.value = true;
     await store.listRemoveableDrives();
 }
+
+function clearSelection(){
+    store.$patch({ selectedDisk: null});
+    router.push({name: "select-image"})
+}
+
 
 </script>

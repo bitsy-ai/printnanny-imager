@@ -43,7 +43,7 @@
                         </template>
                     </li>
                     </ol>
-                    <div class="flex items-center mt-6 justify-space-around grid grid-cols-3">
+                    <div class="flex items-center mt-6 justify-items-center grid grid-cols-3">
                         <router-view name="ChooseImage"></router-view>
                         <router-view name="StorageSelect"></router-view>
                         <router-view name="FlashImage"></router-view>
@@ -85,7 +85,16 @@ const steps = [
             return 'complete'
     }
 }},
-{ name: 'Flash!',status: () => {}, outlineIcon: BoltIconOutline, solidIcon: BoltIconSolid },
+{ name: 'Flash!', outlineIcon: BoltIconOutline, solidIcon: BoltIconSolid, status: ()=> {
+    switch (router.currentRoute.value.name){
+        case 'select-image':
+            return 'upcoming'
+        case 'select-storage':
+            return 'upcoming'
+        case 'flash-image':
+            return 'current'
+    }
+}},
 ]
 
 function reloadDisks(){

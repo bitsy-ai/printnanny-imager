@@ -1,32 +1,33 @@
 type SingleBoardComputer = {
+  enabled: Boolean;
   key: String;
   name: String;
-  enabled: Boolean;
   selected: Boolean;
 }
 
 type OperatingSystem = {
-  name: String;
-  key: String;
-  release_index_url: String;
   arch: String;
+  key: String;
+  name: String;
+  release_index_url: String;
 }
 
 type RemoveableDiskPartition = {
+  label: String;
   mountpoint: String;
   name: String;
-  label: String;
   size: String;
 }
 
 type RemoveableDisk = {
   key: String,
-  name: String;
-  serial: String;
   model: String;
+  name: String;
+  partitions: Array<RemoveableDiskPartition>;
+  path: String;
+  serial: String;
+  size: String;
   vendor: String;
-  partitions: Array<RemoveableDiskPartition>,
-  size: String
 }
 
 export {
