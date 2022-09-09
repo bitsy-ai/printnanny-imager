@@ -1,7 +1,7 @@
 <template>
 <div class="flex-1">
     <p class="text-stone-50 text-2xl font-medium text-center">Storage</p>
-    <button @click="onClick" class="bg-stone-300 hover:bg-stone-200 text-stone-900 font-bold py-2 px-4 border-b-4 border-stone-500 hover:border-stone-300 rounded">{{ store.selectedDisk || 'Choose Storage'}}</button>
+    <button @click="onClick" class="bg-stone-300 hover:bg-stone-200 text-stone-900 font-bold py-2 px-4 border-b-4 border-stone-500 hover:border-stone-300 rounded">{{ store.selectedDisk !== undefined ? `${store.selectedDisk?.vendor} ${store.selectedDisk?.model} (${store.selectedDisk?.size})` :'Choose Storage'}}</button>
     <TransitionRoot as="template" :show="show">
         <Dialog as="div" class="relative z-10" @close="show = false">
         <TransitionChild as="template" enter="ease-out duration-300" enter-from="opacity-0" enter-to="opacity-100" leave="ease-in duration-200" leave-from="opacity-100" leave-to="opacity-0">
@@ -20,7 +20,7 @@
                             <ul class="w-full text-sm font-medium text-gray-900 bg-white rounded-lg border border-gray-200 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                             <li class="w-full rounded-t-lg border-b border-gray-200 dark:border-gray-600" v-for="disk in store.removeableDisks" :key="disk.name">
                                 <div class="flex items-center pl-3">
-                                    <input id="list-radio-license" type="radio" value="" name="list-radio" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-700 focus:ring-2 dark:bg-gray-600 dark:border-gray-500">
+                                    <input id="list-radio-license" type="radio" v-model="store.selectedDisk"  :value="disk" name="list-radio" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-700 focus:ring-2 dark:bg-gray-600 dark:border-gray-500">
                                     <label for="list-radio-license" class="p-4 ml-2 w-full text-sm font-medium text-gray-900 dark:text-gray-300"><strong>{{ disk.vendor }} {{ disk.model}} <span v-if="disk.partitions.length >0">({{ disk.partitions.map(p => p.label).join(', ')}})</span> - {{ disk.size}}</strong>
                                     <span v-if="disk.partitions.length >0"><br>Mounted as {{ disk.partitions.map(p => p.mountpoint).join(', ')}}</span>
                                     </label>
@@ -48,6 +48,8 @@ import { ref } from 'vue'
 import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from '@headlessui/vue'
 import { ExclamationTriangleIcon } from '@heroicons/vue/24/outline'
 import { useWizardStore } from '../../store/wizard';
+
+
 
 const store = useWizardStore();
 const show = ref(false);

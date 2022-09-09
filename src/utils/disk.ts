@@ -6,7 +6,7 @@ function parseLinuxDisks(jsonStr: string): Array<RemoveableDisk> {
   const parsed = JSON.parse(jsonStr);
   console.log(parsed)
   if (parsed.blockdevices == undefined) { console.error("Failed to parse lsblk output", parsed); return [] }
-  const usbDevices = parsed.blockdevices.filter((device: any) => device.tran == "usb" && device.size != "0B");
+  const usbDevices = parsed.blockdevices.filter((device: any) => device.tran == "usb");
   if (usbDevices.length == 0) { return [] }
   return usbDevices.map((device: any) => {
     const partitions = device.children && device.children.length > 0 ? device.children.map((part: any) => {
