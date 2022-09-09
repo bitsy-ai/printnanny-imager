@@ -9,7 +9,9 @@
     </div>
 
     <div class="row-span-3 bg-zinc-500">
-      <div class="grid grid-rows-2">
+      <div
+        class="grid grid-rows-2 items-center content-center justify-content-center"
+      >
         <nav aria-label="Progress">
           <ol role="list" class="flex items-center mt-6 justify-center">
             <li
@@ -25,7 +27,7 @@
                   <div class="h-0.5 w-full bg-indigo-400" />
                 </div>
                 <span
-                  class="relative flex h-12 w-12 items-center justify-center rounded-full bg-indigo-500"
+                  class="relative flex h-12 w-12 items-center justify-center rounded-full bg-indigo-400"
                 >
                   <component
                     :is="step.solidIcon"
@@ -42,12 +44,12 @@
                   <div class="h-0.5 w-full bg-gray-200" />
                 </div>
                 <span
-                  class="relative flex h-12 w-12 items-center justify-center rounded-full border-2 border-indigo-500 bg-white"
+                  class="relative flex h-12 w-12 items-center justify-center rounded-full border-2 border-indigo-400 bg-white"
                   aria-current="step"
                 >
                   <component
                     :is="step.solidIcon"
-                    class="h-8 w-8 text-indigo-500"
+                    class="h-8 w-8 text-indigo-400"
                   ></component>
                   <span class="sr-only">{{ step.name }}</span>
                 </span>
@@ -71,14 +73,14 @@
               </template>
             </li>
           </ol>
-          <div
-            class="flex items-center mt-6 justify-items-center grid grid-cols-3"
-          >
-            <router-view name="ChooseImage"></router-view>
-            <router-view name="StorageSelect"></router-view>
-            <router-view name="FlashImage"></router-view>
-          </div>
         </nav>
+        <div
+          class="flex items-center mt-6 justify-items-center grid grid-cols-3"
+        >
+          <router-view name="ChooseImage"></router-view>
+          <router-view name="StorageSelect"></router-view>
+          <router-view name="FlashImage"></router-view>
+        </div>
       </div>
     </div>
   </div>
