@@ -1,15 +1,15 @@
 <template>
     <div v-if="store.imageFile">
         <p class="text-center text-stone-50 text-sm truncate">{{ truncate(filename(store.imageFile)) }}</p>
-        <button @click="clearSelection" class="text-center block mx-4 my-4 h-12 w-48 block bg-blue-500 hover:bg-blue-400 text-white font-bold py-2 px-4 border-b-4 border-blue-700 hover:border-blue-500 rounded">
+        <button @click="clearSelection" class="text-center block mx-4 my-4 h-12 w-48 block bg-indigo-500 hover:bg-indigo-400 text-white font-bold py-2 px-4 border-b-4 border-indigo-700 hover:border-indigo-500 rounded">
             Clear selection
         </button>
     </div>
     <div v-else>
-        <a href="#" class="mx-4 my-4 text-center relative h-12 w-48 block bg-blue-500 hover:bg-blue-400 text-white font-bold py-2 px-4 border-b-4 border-blue-700 hover:border-blue-500 rounded">
+        <a href="#" class="mx-4 my-4 text-center relative h-12 w-48 block bg-indigo-500 hover:bg-indigo-400 text-white font-bold py-2 px-4 border-b-4 border-indigo-700 hover:border-indigo-500 rounded">
             PrintNanny OS
         </a>
-        <button @click="openFile" class="text-center block mx-4 my-4 h-12 w-48 block bg-blue-500 hover:bg-blue-400 text-white font-bold py-2 px-4 border-b-4 border-blue-700 hover:border-blue-500 rounded">
+        <button @click="openFile" class="text-center block mx-4 my-4 h-12 w-48 block bg-indigo-500 hover:bg-indigo-400 text-white font-bold py-2 px-4 border-b-4 border-indigo-700 hover:border-indigo-500 rounded">
             Flash from file
         </button>
     </div>
@@ -43,7 +43,7 @@ async function openFile(){
     });
     if (selected){
         store.$patch({ imageFile: selected});
-            // router.push({name: })
+        router.push({name: "choose-disk"})
 
     }
 }
