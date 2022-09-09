@@ -15,6 +15,7 @@ export const useStore = defineStore({
       this.$patch({ loading: true });
       const disks = await listRemoveableDisks();
       this.$patch({ removeableDisks: disks, loading: false });
+      return disks
     },
   },
 });

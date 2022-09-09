@@ -30,7 +30,7 @@ type RemoveableDisk = {
   vendor: string;
 };
 
-export {
+export type {
   SingleBoardComputer,
   OperatingSystem,
   RemoveableDisk,

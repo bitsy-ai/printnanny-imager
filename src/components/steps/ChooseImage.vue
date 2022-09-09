@@ -36,7 +36,11 @@ function truncate(str: string): string {
   return str.slice(0, 10) + "..." + str.slice(str.length - 10, str.length);
 }
 function filename(path: string): string {
-  return path.split("\\").pop().split("/").pop() || "";
+  let result = path.split("\\");
+  if (result !== undefined){
+    return result?.pop()?.split("/").pop() || "";
+  }
+  return path
 }
 
 async function openFile() {
@@ -48,8 +52,8 @@ async function openFile() {
         extensions: ["wic", "zip", "tar.gz", "img"],
       },
     ],
-  });
-  if (selected) {
+  }) as string | null;
+  if (selected !== null) {
     store.$patch({ selectedImageFile: selected });
     router.push({ name: "select-storage" });
   }
