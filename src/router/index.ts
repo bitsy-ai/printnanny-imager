@@ -1,11 +1,9 @@
 import { createRouter, createMemoryHistory } from "vue-router";
-import WizardLayout from "@/components/WizardLayout.vue";
-import ChooseEdition from "@/components/steps/ChooseEdition.vue";
-import ConfigureEdition from "@/components/steps/ConfigureEdition.vue";
-import CreateSDCard from "@/components/steps/CreateSDCard.vue";
 import HomeLayout from "@/components/HomeLayout.vue";
 import ChooseImage from "@/components/steps/ChooseImage.vue";
-import ChooseDisk from "@/components/steps/ChooseDisk.vue";
+import StorageSelect from '@/components/select/StorageSelect.vue';
+import FlashImage from "@/components/steps/FlashImage.vue";
+
 
 const router = createRouter({
   history: createMemoryHistory(),
@@ -13,37 +11,38 @@ const router = createRouter({
     {
       path: "/",
       components: {
+        ChooseImage: ChooseImage,
         default: HomeLayout
       },
       children: [
         {
           path: "",
-          name: "choose-image",
+          name: "select-image",
           components: {
-            default: ChooseImage
+            ChooseImage: ChooseImage,
+            StorageSelect: StorageSelect,
+            FlashImage: FlashImage
           },
         },
         {
-          path: "",
-          name: "choose-disk",
+          path: "select-storage",
+          name: "select-storage",
           components: {
-            default: ChooseDisk
+            ChooseImage: ChooseImage,
+            StorageSelect: StorageSelect,
+            FlashImage: FlashImage
+
           },
         },
-        // {
-        //   path: "configure/:edition",
-        //   name: "configure-edition",
-        //   components: {
-        //     default: ConfigureEdition,
-        //   },
-        // },
-        // {
-        //   path: "sd-card",
-        //   name: "sd-card",
-        //   components: {
-        //     default: CreateSDCard,
-        //   },
-        // },
+        {
+          path: "flash-image",
+          name: "flash-image",
+          components: {
+            ChooseImage: ChooseImage,
+            StorageSelect: StorageSelect,
+            FlashImage: FlashImage
+          },
+        },
       ],
     },
   ],

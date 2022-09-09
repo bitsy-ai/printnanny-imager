@@ -21,7 +21,7 @@ import { open } from '@tauri-apps/api/dialog';
 import { useStore } from '@/store';
 
 const router = useRouter();
-const key = "choose-image";
+const key = "select-image";
 const active = computed(() => router.currentRoute.value.name == key);
 const store = useStore();
 
@@ -43,7 +43,7 @@ async function openFile(){
     });
     if (selected){
         store.$patch({ selectedImageFile: selected});
-        router.push({name: "choose-disk"});
+        router.push({name: "select-storage"});
     }
 }
 

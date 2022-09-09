@@ -44,9 +44,10 @@
                     </li>
                     </ol>
                     <div class="flex items-center mt-6 justify-space-around grid grid-cols-3">
-                        <ChooseImage />
-                        <StorageSelect />
-                        <FlashButton />
+                        <router-view name="ChooseImage"></router-view>
+                        <router-view name="StorageSelect"></router-view>
+                        <router-view name="FlashImage"></router-view>
+
                     </div>
 
                 </nav>
@@ -59,45 +60,33 @@ import { computed } from "vue";
 import { RouterView, useRouter } from "vue-router";
 import { FolderArrowDownIcon as FolderArrowDownIconOutline, ServerIcon as ServerIconOutline, BoltIcon as BoltIconOutline } from "@heroicons/vue/24/outline";
 import { FolderArrowDownIcon as FolderArrowDownIconSolid, ServerIcon as ServerIconSolid, BoltIcon as BoltIconSolid } from "@heroicons/vue/24/solid";
-
-import CompactSelect from './select/CompactSelect.vue'
-import StorageSelect from './select/StorageSelect.vue';
 import boards from "@/data/boards";
 import operatingSystems from "@/data/os";
-
-import ChooseImage from "@/components/steps/ChooseImage.vue";
-import ChooseDisk from "@/components/steps/ChooseDisk.vue";
-import FlashButton from "@/components/steps/FlashButton.vue";
-
-import { useWizardStore } from "@/store/wizard";
-import StorageSelect from "./select/StorageSelect.vue";
 
 const router = useRouter();
 const steps = [
 { name: 'Choose image', outlineIcon: FolderArrowDownIconOutline, solidIcon: FolderArrowDownIconSolid, status: () => {
     switch (router.currentRoute.value.name){
-        case 'choose-image':
+        case 'select-image':
             return 'current'
-        case 'choose-disk':
+        case 'select-storage':
             return 'complete'
-        case 'sd-card':
+        case 'flash-image':
             return 'complete'
     }
 }},
 { name: 'Choose disk', outlineIcon: ServerIconOutline, solidIcon: ServerIconSolid, status: () => {
     switch (router.currentRoute.value.name){
-        case 'choose-image':
+        case 'select-image':
             return 'upcoming'
-        case 'choose-disk':
+        case 'select-storage':
             return 'current'
-        case 'sd-card':
+        case 'flash-image':
             return 'complete'
     }
 }},
 { name: 'Flash!',status: () => {}, outlineIcon: BoltIconOutline, solidIcon: BoltIconSolid },
 ]
-const store = useWizardStore();
-// store.listRemoveableDrives()
 
 function reloadDisks(){
     console.log("Reloading disks")
