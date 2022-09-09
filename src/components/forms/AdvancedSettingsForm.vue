@@ -94,7 +94,7 @@
 <script setup lang="ts">
 import * as yup from "yup";
 import { useWizardStore } from "@/store/wizard";
-import { Form, Field, ErrorMessage, configure } from "vee-validate";
+import { Form, Field, configure } from "vee-validate";
 
 configure({
   validateOnBlur: true,

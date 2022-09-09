@@ -1,9 +1,8 @@
 import { createRouter, createMemoryHistory } from "vue-router";
 import HomeLayout from "@/components/HomeLayout.vue";
 import ChooseImage from "@/components/steps/ChooseImage.vue";
-import StorageSelect from '@/components/select/StorageSelect.vue';
+import StorageSelect from "@/components/select/StorageSelect.vue";
 import FlashImage from "@/components/steps/FlashImage.vue";
-
 
 const router = createRouter({
   history: createMemoryHistory(),
@@ -12,7 +11,7 @@ const router = createRouter({
       path: "/",
       components: {
         ChooseImage: ChooseImage,
-        default: HomeLayout
+        default: HomeLayout,
       },
       children: [
         {
@@ -21,7 +20,7 @@ const router = createRouter({
           components: {
             ChooseImage: ChooseImage,
             StorageSelect: StorageSelect,
-            FlashImage: FlashImage
+            FlashImage: FlashImage,
           },
         },
         {
@@ -30,8 +29,7 @@ const router = createRouter({
           components: {
             ChooseImage: ChooseImage,
             StorageSelect: StorageSelect,
-            FlashImage: FlashImage
-
+            FlashImage: FlashImage,
           },
         },
         {
@@ -40,7 +38,7 @@ const router = createRouter({
           components: {
             ChooseImage: ChooseImage,
             StorageSelect: StorageSelect,
-            FlashImage: FlashImage
+            FlashImage: FlashImage,
           },
         },
       ],
