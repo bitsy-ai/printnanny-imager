@@ -1,4 +1,4 @@
-<template>
+<!-- <template>
   <Combobox v-model="store[storeAttr]" as="div" class="w-3/4">
     <ComboboxLabel
       class="block flex font-medium text-stone-50 text-2xl text-center justify-center items-center"
@@ -115,4 +115,4 @@ const filteredOptions = computed(() =>
 );
 
 console.log(filteredOptions.value);
-</script>
+</script> -->

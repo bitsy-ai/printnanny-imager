@@ -1,4 +1,4 @@
-<template>
+<!-- <template>
   <div class="container m-auto">
     <Form
       v-slot="{ values }"
@@ -120,4 +120,4 @@ const schema = yup.object({
 function onSubmit(values) {
   console.log("Form was submitted with values", values);
 }
-</script>
+</script> -->

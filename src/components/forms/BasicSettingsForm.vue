@@ -1,4 +1,4 @@
-<template>
+<!-- <template>
   <div class="container m-auto">
     <Form
       class="space-y-8 divide-y divide-gray-200"
@@ -512,4 +512,4 @@ const schema = yup.object({
 function onSubmit(values) {
   console.log("Form was submitted with values", values);
 }
-</script>
+</script> -->
