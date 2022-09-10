@@ -175,14 +175,20 @@ pub async fn list_removeable_disks_darwin() -> Result<Vec<DarwinDisk>> {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct CrossPlatformDisk {
     pub bootable: bool,
+    #[serde(rename(serialize = "busProtocol"))]
     pub bus_protocol: String,
+    #[serde(rename(serialize = "displayName"))]
     pub display_name: String,
+    #[serde(rename(serialize = "deviceId"))]
     pub device_id: String,
     pub path: String,
     pub size: u64,
+    #[serde(rename(serialize = "sizePretty"))]
     pub size_pretty: String,
+    #[serde(rename(serialize = "isRemoveable"))]
     pub is_removable: bool,
     pub partitions: Vec<Self>,
+    #[serde(rename(serialize = "volumeName"))]
     pub volume_name: String,
 }
 
