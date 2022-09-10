@@ -25,20 +25,20 @@
         "open": true,
         "scope": [
           {
+            "name": "list-diskdrive--linux",
+            "cmd": "lsblk",
+            "args": [
+              "--output-all",
+              "--json"
+            ]
+          },
+          {
             "name": "list-diskdrive--windows",
             "cmd": "powershell.exe",
             "args": [
               "GET-WMIOBJECT",
               "-query",
               "'SELECT * from win32_diskdrive' | ConvertTo-Json"
-            ]
-          },
-          {
-            "name": "list-diskdrive--linux",
-            "cmd": "lsblk",
-            "args": [
-              "--output-all",
-              "--json"
             ]
           },
           {

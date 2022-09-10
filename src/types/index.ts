@@ -19,7 +19,7 @@ type RemoveableDiskPartition = {
   size: string;
 };
 
-type RemoveableDisk = {
+type RemoveableLinuxDisk = {
   key: string;
   model: string;
   name: string;
@@ -30,9 +30,22 @@ type RemoveableDisk = {
   vendor: string;
 };
 
+type RemoveableCrossPlatformDisk = {
+  type: string;
+  name: string;
+  fileSystem: string;
+  mountPoint: string;
+  totalSpace: number;
+  totalSpacePretty: string;
+  availableSpace: number;
+  availableSpacePretty: string;
+  isRemoveable: boolean;
+};
+
 export type {
   SingleBoardComputer,
   OperatingSystem,
-  RemoveableDisk,
+  RemoveableLinuxDisk,
   RemoveableDiskPartition,
+  RemoveableCrossPlatformDisk,
 };

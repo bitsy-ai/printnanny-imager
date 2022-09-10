@@ -9,8 +9,8 @@
   </div>
   <div v-else-if="!active && store.selectedDisk !== null" class="flex-1">
     <p class="text-center text-stone-50 text-sm truncate">
-      {{ store.selectedDisk?.vendor }} {{ store.selectedDisk?.model }} ({{
-        store.selectedDisk?.size
+      {{ store.selectedDisk?.name }} {{ store.selectedDisk?.mountPoint }} ({{
+        store.selectedDisk?.totalSpacePretty
       }})
     </p>
     <button
@@ -24,8 +24,8 @@
     <span
       v-if="store.selectedDisk !== null"
       class="text-center text-stone-50 text-sm truncate"
-      >{{ store.selectedDisk?.vendor }} {{ store.selectedDisk?.model }} ({{
-        store.selectedDisk?.size
+      >{{ store.selectedDisk?.name }} {{ store.selectedDisk?.mountPoint }} ({{
+        store.selectedDisk?.totalSpacePretty
       }})</span
     >
     <button
@@ -100,24 +100,11 @@
                               <label
                                 for="list-radio-license"
                                 class="p-4 ml-2 w-full text-sm font-medium text-gray-900 dark:text-gray-300"
-                                ><strong
-                                  >{{ disk.vendor }} {{ disk.model }}
-                                  <span v-if="disk.partitions.length > 0"
-                                    >({{
-                                      disk.partitions
-                                        .map((p) => p.label)
-                                        .join(", ")
-                                    }})</span
-                                  >
-                                  - {{ disk.size }}</strong
-                                >
-                                <span v-if="disk.partitions.length > 0"
-                                  ><br />Mounted as
-                                  {{
-                                    disk.partitions
-                                      .map((p) => p.mountpoint)
-                                      .join(", ")
-                                  }}</span
+                                ><strong>
+                                  {{ disk.name }}
+                                  {{ disk.mountPoint }} ({{
+                                    disk.totalSpacePretty
+                                  }})</strong
                                 >
                               </label>
                             </div>

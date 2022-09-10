@@ -1,8 +1,14 @@
 import { Child, ChildProcess, Command } from "@tauri-apps/api/shell";
 import { platform } from "@tauri-apps/api/os";
-import { RemoveableDisk, RemoveableDiskPartition } from "../types";
+import { invoke } from "@tauri-apps/api/tauri";
 
-function parseLinuxDisks(jsonStr: string): Array<RemoveableDisk> {
+import {
+  RemoveableLinuxDisk,
+  RemoveableDiskPartition,
+  RemoveableCrossPlatformDisk,
+} from "../types";
+
+function parseLinuxDisks(jsonStr: string): Array<RemoveableLinuxDisk> {
   const parsed = JSON.parse(jsonStr);
   console.log(parsed);
   if (parsed.blockdevices == undefined) {
@@ -41,30 +47,41 @@ function parseLinuxDisks(jsonStr: string): Array<RemoveableDisk> {
   });
 }
 
-async function listRemoveableDisks(): Promise<Array<RemoveableDisk>> {
+function parseCrossPlatformDisks(
+  jsonStr: string
+): Array<RemoveableCrossPlatformDisk> {
+  const parsed = JSON.parse(jsonStr);
+  console.log(parsed);
+  return parsed.filter(
+    (d: RemoveableCrossPlatformDisk) => d.isRemoveable == true
+  );
+}
+
+async function listRemoveableDisks(): Promise<
+  Array<RemoveableCrossPlatformDisk>
+> {
   const platformName = await platform();
-  let output = null as null | ChildProcess;
-  switch (platformName) {
-    case "darwin":
-      output = await new Command("list-diskdrive--macOS").execute();
-      console.log(JSON.parse(output.stdout));
-      return [];
-      break;
-    case "linux":
-      output = await new Command("list-diskdrive--linux").execute();
-      return parseLinuxDisks(output.stdout);
-      break;
-    case "win32":
-      output = await new Command("list-diskdrive--windows").execute();
-      console.log(JSON.parse(output.stdout));
-      return [];
-      break;
-    default:
-      console.error(
-        `${platformName} is not supported. Please open a Github issue to request support.`
-      );
-      return [];
-  }
+  const output = null as null | ChildProcess;
+  return parseCrossPlatformDisks(await invoke("list_diskdrive_crossplatform"));
+  // switch (platformName) {
+  //   case "darwin":
+  //     return parseCrossPlatformDisks(await invoke('list_diskdrive_crossplatform'))
+  //     break;
+  //   case "linux":
+  //     output = await new Command("list-diskdrive--linux").execute();
+  //     return parseLinuxDisks(output.stdout);
+  //     break;
+  //   case "win32":
+  //     output = await new Command("list-diskdrive--windows").execute();
+  //     console.log(JSON.parse(output.stdout));
+  //     return [];
+  //     break;
+  //   default:
+  //     console.error(
+  //       `${platformName} is not supported. Please open a Github issue to request support.`
+  //     );
+  //     return [];
+  // }
 }
 
 async function flashImage(disk: RemoveableDisk, imagePath: string) {

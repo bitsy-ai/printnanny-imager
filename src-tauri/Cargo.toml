@@ -14,9 +14,18 @@ rust-version = "1.57"
 tauri-build = { version = "1.0.0", features = [] }
 
 [dependencies]
+anyhow = "1.0.64"
+async-process = "1.5.0"    # Async interface for working with processes                                  # Flexible concrete Error type built on std::error::Error
+human_bytes = "0.3.1"
+log = "0.4.17"                 # A lightweight logging facade for Rust 
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 tauri = { version = "1.0.0", features = ["dialog-all", "os-all", "shell-all"] }
+block-utils = "0.10.7"
+
+[dependencies.tauri-plugin-log]
+git = "https://github.com/tauri-apps/tauri-plugin-log"
+branch = "dev"
 [features]
 # by default Tauri runs in production mode
 # when `tauri dev` runs it is executed with `cargo run --no-default-features` if `devPath` is an URL

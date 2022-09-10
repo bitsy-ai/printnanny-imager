@@ -1,13 +1,13 @@
 import { defineStore, acceptHMRUpdate } from "pinia";
-import { RemoveableDisk } from "@/types";
+import { RemoveableCrossPlatformDisk } from "@/types";
 import { listRemoveableDisks } from "../utils/disk";
 
 export const useStore = defineStore({
   id: "global",
   state: () => ({
     selectedImageFile: null as null | string,
-    selectedDisk: null as null | RemoveableDisk,
-    removeableDisks: [] as Array<RemoveableDisk>,
+    selectedDisk: null as null | RemoveableCrossPlatformDisk,
+    removeableDisks: [] as Array<RemoveableCrossPlatformDisk>,
     loading: false,
   }),
   actions: {
@@ -15,7 +15,7 @@ export const useStore = defineStore({
       this.$patch({ loading: true });
       const disks = await listRemoveableDisks();
       this.$patch({ removeableDisks: disks, loading: false });
-      return disks
+      return disks;
     },
   },
 });
