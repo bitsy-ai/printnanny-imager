@@ -1,19 +1,66 @@
-use anyhow::{Context, Result};
-use human_bytes::human_bytes;
-use log::{error, info, warn};
-use serde::{Deserialize, Serialize};
 use std::io::Write;
 use std::io::{self, prelude::*, BufReader};
 use std::process::Command;
 use std::process::Stdio;
 use std::string::String;
 
+use anyhow::{Context, Result};
+use human_bytes::human_bytes;
+use log::{error, info, warn};
+use regex::Regex;
+use serde::{Deserialize, Serialize};
+
 use super::app;
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-struct ProgressPayload {
-    msg: String,
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+pub struct WriteImageProgress {
+    pub percent_complete: i32,
+    pub bytes_written: u64,
+    pub bytes_total: u64,
+    pub write_speed: String,
+    pub stdout_line: String,
 }
+
+impl WriteImageProgress {
+    // parse dd status=progress output
+    // Example: 3112173568 bytes (3112 MB, 2968 MiB) transferred 334.790s, 9296 kB/s
+    fn new_darwin(stdout_line: String, bytes_total: u64) -> Self {
+        let speed_split = stdout_line.split(", ");
+        let write_speed = match speed_split.last() {
+            Some(s) => s,
+            None => "",
+        }
+        .to_string();
+        let bytes_transferred_re = Regex::new(r"(\d+)").expect("Regrex creation failed");
+        let caps = bytes_transferred_re
+            .captures(&stdout_line)
+            .expect("Regex captures failed ");
+        let bytes_written: u64 = match caps.get(0) {
+            Some(b) => b.as_str().parse().unwrap_or_else(|_| 0 as u64),
+            None => 0 as u64,
+        };
+        let percent_complete =
+            ((bytes_written as f64) / (bytes_total as f64) * 100.0).round() as i32;
+
+        Self {
+            write_speed,
+            percent_complete,
+            stdout_line,
+            bytes_total,
+            bytes_written,
+        }
+    }
+    pub fn new(stdout_line: &[u8], bytes_total: u64) -> Self {
+        let stdout_line = String::from_utf8_lossy(stdout_line).to_string();
+        if cfg!(target_os = "macos") {
+            WriteImageProgress::new_darwin(stdout_line, bytes_total)
+        } else {
+            unimplemented!("WriteImageProgress is not implemented for target_os",)
+        }
+    }
+}
+
+// pub fn parse_dd_progress(stdout_line: &[u8]) -> {}
 
 #[cfg(target_os = "macos")]
 pub fn empty_darwin_disk_list() -> Vec<DarwinDisk> {
@@ -86,8 +133,9 @@ pub async fn write_image_darwin(image_path: String, disk: String) -> Result<()> 
     let reader = BufReader::new(dd_handle);
     for line in reader.lines() {
         let line = line?;
-        let payload = ProgressPayload {
+        let payload = app::EventPayload {
             msg: line.to_string(),
+            event_name: app::EVENT_IMAGE_WRITE_PROGRESS.to_string(),
         };
         app::TauriApp::emit("write_image_progress", payload);
         info!("{}", &line);
@@ -288,4 +336,27 @@ pub async fn list_disks() -> Result<Vec<CrossPlatformDisk>> {
         return Ok(result);
     }
     Ok(vec![])
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn test_parse_macos_dd_progress() {
+        let bytes_total = 6224347136 as u64;
+        let input =
+            "3112173568 bytes (3112 MB, 2968 MiB) transferred 334.790s, 9296 kB/s".as_bytes();
+        let event = WriteImageProgress::new(input, bytes_total);
+
+        assert_eq!(event.bytes_total, bytes_total);
+        assert_eq!(event.bytes_written, 3112173568 as u64);
+        assert_eq!(event.percent_complete, 50);
+        assert_eq!(event.write_speed, "9296 kB/s");
+        assert_eq!(
+            event.stdout_line,
+            String::from_utf8_lossy(input).to_string()
+        );
+    }
 }

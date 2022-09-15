@@ -17,6 +17,7 @@ tauri-build = { version = "1.0.0", features = [] }
 anyhow = "1.0.64"
 human_bytes = "0.3.1"
 log = "0.4.17"                 # A lightweight logging facade for Rust 
+regex = "1.6.0"                    # An implementation of regular expressions for Rust.
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 tauri = { version = "1.0.0", features = ["dialog-all", "os-all", "shell-all"] }

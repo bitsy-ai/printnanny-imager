@@ -2046,6 +2046,7 @@ dependencies = [
  "human_bytes",
  "log",
  "once_cell",
+ "regex",
  "security-framework",
  "serde",
  "serde_json",

@@ -1,9 +1,19 @@
 use once_cell::sync::OnceCell;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
+
 use tauri::Manager;
 use tauri::{AppHandle, Wry};
 
 static APP_INSTANCE: OnceCell<AppHandle<Wry>> = OnceCell::new();
+
+pub static EVENT_IMAGE_WRITE_PROGRESS: &str = "image_write_progress";
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct EventPayload {
+    pub msg: String,
+    pub event_name: String,
+}
+
 pub struct TauriApp {}
 impl TauriApp {
     pub fn global() -> &'static AppHandle<Wry> {
