@@ -73,7 +73,9 @@
                         >Select removeable USB storage:</DialogTitle
                       >
                       <div v-if="store.loading">
-                        <CustomSpinner text="Scanning for removeable drives..." />
+                        <CustomSpinner
+                          text="Scanning for removeable drives..."
+                        />
                       </div>
                       <div v-else class="mt-2">
                         <ul
@@ -96,9 +98,7 @@
                               <label
                                 for="list-radio-license"
                                 class="p-4 ml-2 w-full text-sm font-medium text-gray-900 dark:text-gray-300"
-                                ><strong>
-                                  {{ disk.displayHeader() }}</strong
-                                >
+                                ><strong> {{ disk.displayHeader() }}</strong>
                                 {{ disk.displayDetail() }}
                               </label>
                             </div>

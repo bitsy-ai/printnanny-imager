@@ -39,7 +39,7 @@ class CrossPlatformDisk implements CrossPlatformDiskInterface {
   isRemoveable: string;
   partitions: Array<CrossPlatformDisk>;
   volumeName: string;
-  constructor(args: CrossPlatformDiskInterface){
+  constructor(args: CrossPlatformDiskInterface) {
     this.bootable = args.bootable;
     this.busProtocol = args.busProtocol;
     this.displayName = args.displayName;
@@ -49,24 +49,19 @@ class CrossPlatformDisk implements CrossPlatformDiskInterface {
     this.sizePretty = args.sizePretty;
     this.volumeName = args.volumeName;
     this.isRemoveable = args.isRemoveable;
-    this.partitions = args.partitions
+    this.partitions = args.partitions;
   }
 
   displayHeader(): string {
-      return `${this.displayName} ${this.path} - ${this.sizePretty}`
+    return `${this.displayName} ${this.path} - ${this.sizePretty}`;
   }
   // TODO
   displayDetail(): string {
-      return ''
-      // return this.partitions.filter((p) => p.volumeName !== '').map(p => p.volumeName).join(', ')
+    return "";
+    // return this.partitions.filter((p) => p.volumeName !== '').map(p => p.volumeName).join(', ')
   }
 }
 
-export type {
-  SingleBoardComputer,
-  OperatingSystem,
-};
+export type { SingleBoardComputer, OperatingSystem };
 
-export {
-  CrossPlatformDisk
-}
+export { CrossPlatformDisk };

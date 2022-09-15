@@ -7,7 +7,7 @@ export const useStore = defineStore({
   state: () => ({
     selectedImageFile: null as null | string,
     selectedDisk: null as null | CrossPlatformDisk,
-    removeableDisks: [] as Array<CrossPlatformDisk >,
+    removeableDisks: [] as Array<CrossPlatformDisk>,
     loading: false,
   }),
   actions: {
@@ -15,7 +15,7 @@ export const useStore = defineStore({
       this.$patch({ loading: true });
       const disks = await listRemoveableDisks();
       console.log("Found removeable disks", disks);
-      
+
       this.$patch({ removeableDisks: disks, loading: false });
       return disks;
     },

@@ -1,70 +1,18 @@
-import { Child, ChildProcess, Command } from "@tauri-apps/api/shell";
+import { Child, Command } from "@tauri-apps/api/shell";
 import { platform } from "@tauri-apps/api/os";
 import { invoke } from "@tauri-apps/api/tauri";
 
-import {
-  CrossPlatformDisk
-} from "../types";
-
-// function parseLinuxDisks(jsonStr: string): Array<RemoveableLinuxDisk> {
-//   const parsed = JSON.parse(jsonStr);
-//   console.log(parsed);
-//   if (parsed.blockdevices == undefined) {
-//     console.error("Failed to parse lsblk output", parsed);
-//     return [];
-//   }
-//   const usbDevices = parsed.blockdevices.filter(
-//     (device: any) => device.tran == "usb"
-//   );
-//   if (usbDevices.length == 0) {
-//     return [];
-//   }
-//   return usbDevices.map((device: any) => {
-//     const partitions =
-//       device.children && device.children.length > 0
-//         ? device.children.map((part: any) => {
-//             return {
-//               name: part.name,
-//               label: part.label,
-//               size: part.size,
-//               mountpoint: part.mountpoint,
-//             } as RemoveableDiskPartition;
-//           })
-//         : [];
-
-//     return {
-//       key: device.name,
-//       model: device.model,
-//       name: device.name,
-//       path: device.path,
-//       partitions: partitions,
-//       serial: device.serial,
-//       size: device.size,
-//       vendor: device.vendor,
-//     } as RemoveableDisk;
-//   });
-// }
-
-// function parseCrossPlatformDisks(
-//   jsonStr: string
-// ): Array<RemoveableCrossPlatformDisk> {
-//   const parsed = JSON.parse(jsonStr);
-//   console.log(parsed);
-//   return parsed.filter(
-//     (d: RemoveableCrossPlatformDisk) => d.isRemoveable == true
-//   );
-// }
+import { CrossPlatformDisk } from "../types";
 
 async function listRemoveableDisks(): Promise<
   Array<CrossPlatformDisk>
 > {
-  const platformName = await platform();
-  let output = await invoke("list_diskdrive_crossplatform");
+  const output = await invoke("list_diskdrive_crossplatform");
   if (output){
     const parsed = JSON.parse(output as string);
     return parsed.map((d: any) => new CrossPlatformDisk(d));
   }
-  return []
+  return [];
 }
 
 async function flashImage(disk: CrossPlatformDisk, imagePath: string) {
@@ -75,7 +23,9 @@ async function flashImage(disk: CrossPlatformDisk, imagePath: string) {
     case "darwin":
       // unmount disk
       await new Command("unmount-disk--macos", ["unmountDisk", disk.path]);
-      console.log(`Unmounted disk ${disk.path}`)
+      console.log(`Unmounted disk ${disk.path}`);
+      await invoke("write_image_darwin", {imagePath: imagePath, disk: disk.path });
+      console.log(`Finished writing ${imagePath} to ${disk.path}`);
       break;
     case "linux":
       command = await new Command("write-image--linux", [
