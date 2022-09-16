@@ -2,16 +2,14 @@ use std::fs::File;
 use std::io::IoSliceMut;
 use std::io::Write;
 use std::io::{prelude::*, BufReader};
-use std::os::unix::io::FromRawFd;
 use std::process::Command;
 use std::process::Stdio;
 use std::string::String;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 use anyhow::{Context, Result};
 use human_bytes::human_bytes;
 use log::{error, info, warn};
-use nix::sys::socket;
 use serde::{Deserialize, Serialize};
 
 use super::app;
@@ -97,7 +95,8 @@ pub fn write_image(image_path: String, disk: String) -> Result<()> {
 
 #[cfg(target_os = "macos")]
 pub fn write_image(image_path: String, disk: String) -> Result<()> {
-    use std::{io::BufWriter, os::unix::prelude::RawFd};
+    use nix::sys::socket;
+    use std::{io::BufWriter, os::unix::io::FromRawFd, os::unix::prelude::RawFd};
 
     let image_file = File::open(&image_path)?;
     let bytes_total = image_file.metadata()?.len();
