@@ -319,6 +319,7 @@ pub struct CrossPlatformDisk {
     pub volume_name: String,
 }
 
+#[cfg(target_os = "macos")]
 impl From<&DarwinDisk> for CrossPlatformDisk {
     fn from(disk: &DarwinDisk) -> Self {
         Self {
