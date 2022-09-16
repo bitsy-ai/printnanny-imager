@@ -12,13 +12,11 @@ use anyhow::{Context, Result};
 use human_bytes::human_bytes;
 use log::{error, info, warn};
 use nix::sys::socket;
-use nix::unistd::pipe;
-use regex::Regex;
 use serde::{Deserialize, Serialize};
 
 use super::app;
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct WriteImageProgress {
     // pub percent_complete: i32,
     pub bytes_written: u64,
@@ -29,7 +27,7 @@ pub struct WriteImageProgress {
 
 #[cfg(target_os = "macos")]
 pub fn empty_darwin_disk_list() -> Vec<DarwinDisk> {
-    return vec![];
+    vec![]
 }
 
 #[cfg(target_os = "macos")]
@@ -65,7 +63,7 @@ pub fn write_image_darwin(image_path: String, disk: String) -> Result<()> {
     info!("Attempting to unmount disk {}", &disk);
     // unmount disk
     let unmount_output = Command::new("/usr/sbin/diskutil")
-        .args(&["unmountDisk", &disk])
+        .args(["unmountDisk", &disk])
         .output()?;
     match unmount_output.status.success() {
         true => {
@@ -105,7 +103,7 @@ pub fn write_image_darwin(image_path: String, disk: String) -> Result<()> {
     let child = Command::new("/usr/libexec/authopen")
         .stdin(Stdio::piped())
         .stdout(auth_stdout_fd)
-        .args(&["-stdoutpipe", "-extauth", "-w", &disk])
+        .args(["-stdoutpipe", "-extauth", "-w", &disk])
         .spawn()?;
 
     // write AuthorizationExternalForm bytes to stdin, expected by `-extauth` flag
@@ -133,13 +131,13 @@ pub fn write_image_darwin(image_path: String, disk: String) -> Result<()> {
 
     info!("Received msg: {:?}", msg);
     let capacity = 2048;
-    let mut bytes_written = 0 as u64;
+    let mut bytes_written = 0_u64;
     let mut image_reader = BufReader::with_capacity(capacity, image_file);
     let mut image_writer = BufWriter::with_capacity(capacity, outf);
 
     loop {
         let buf = image_reader.fill_buf()?;
-        if buf.len() == 0 {
+        if buf.is_empty() {
             break;
         }
         image_writer.write_all(buf)?;
@@ -231,14 +229,14 @@ pub async fn list_removeable_disks_darwin() -> Result<Vec<DarwinDisk>> {
     // equivalent to:
     // $ diskutil list -plist physical | plutil -convert json -r -o - -
     let disks_list_plist_child = Command::new("diskutil")
-        .args(&["list", "-plist", "physical"])
+        .args(["list", "-plist", "physical"])
         .stdout(Stdio::piped())
         .output()
         .context("Command failed: diskutil list -plist physical")?;
     // convert plist to json
     // let disks_list_plist_stdio = String::from_utf8(disks_list_plist_child.stdout)?;
     let mut disks_list_json_child = Command::new("plutil")
-        .args(&["-convert", "json", "-r", "-o", "-", "-"])
+        .args(["-convert", "json", "-r", "-o", "-", "-"])
         .stdin(Stdio::piped()) // Pipe through.
         .stdout(Stdio::piped())
         .spawn()
@@ -264,14 +262,14 @@ pub async fn list_removeable_disks_darwin() -> Result<Vec<DarwinDisk>> {
     for disk in disks_list.all_disks.iter() {
         // get detailed information about <disk>
         let disks_info_plist_child = Command::new("diskutil")
-            .args(&["info", "-plist", disk])
+            .args(["info", "-plist", disk])
             .stdout(Stdio::piped())
             .output()
             .context(format!("Command failed: diskutil info -plist {}", disk))?;
 
         // convert plist to json
         let mut disks_info_json_child = Command::new("plutil")
-            .args(&["-convert", "json", "-r", "-o", "-", "-"])
+            .args(["-convert", "json", "-r", "-o", "-", "-"])
             .stdin(Stdio::piped()) // Pipe through.
             .stdout(Stdio::piped())
             .spawn()
@@ -324,7 +322,7 @@ pub struct CrossPlatformDisk {
 impl From<&DarwinDisk> for CrossPlatformDisk {
     fn from(disk: &DarwinDisk) -> Self {
         Self {
-            bootable: disk.bootable.clone(),
+            bootable: disk.bootable,
             bus_protocol: disk.bus_protocol.clone(),
             display_name: disk.display_name.clone(),
             device_id: disk.device_id.clone(),
@@ -333,7 +331,7 @@ impl From<&DarwinDisk> for CrossPlatformDisk {
             size_pretty: human_bytes(disk.size as f64),
             is_removable: disk.is_removable,
             volume_name: disk.volume_name.clone(),
-            partitions: disk.partitions.iter().map(|d| Self::from(d)).collect(),
+            partitions: disk.partitions.iter().map(Self::from).collect(),
         }
     }
 }
@@ -343,28 +341,28 @@ pub async fn list_disks() -> Result<Vec<CrossPlatformDisk>> {
         let result = list_removeable_disks_darwin()
             .await?
             .iter()
-            .map(|d| CrossPlatformDisk::from(d))
+            .map(CrossPlatformDisk::from)
             .collect();
         return Ok(result);
     }
     Ok(vec![])
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+// #[cfg(test)]
+// mod tests {
+//     use super::*;
 
-    #[cfg(target_os = "macos")]
-    #[test]
-    fn test_parse_macos_dd_progress() {
-        let bytes_total = 6224347136 as u64;
-        let input = "3112173568 bytes (3112 MB, 2968 MiB) transferred 334.790s, 9296 kB/s";
-        let event = WriteImageProgress::new(input, bytes_total);
+//     #[cfg(target_os = "macos")]
+//     #[test]
+//     fn test_parse_macos_dd_progress() {
+//         let bytes_total = 6224347136 as u64;
+//         let input = "3112173568 bytes (3112 MB, 2968 MiB) transferred 334.790s, 9296 kB/s";
+//         let event = WriteImageProgress::new(input, bytes_total);
 
-        assert_eq!(event.bytes_total, bytes_total);
-        assert_eq!(event.bytes_written, 3112173568 as u64);
-        assert_eq!(event.percent_complete, 50);
-        assert_eq!(event.write_speed, "9296 kB/s");
-        assert_eq!(event.stdout_line, input.to_string());
-    }
-}
+//         assert_eq!(event.bytes_total, bytes_total);
+//         assert_eq!(event.bytes_written, 3112173568 as u64);
+//         assert_eq!(event.percent_complete, 50);
+//         assert_eq!(event.write_speed, "9296 kB/s");
+//         assert_eq!(event.stdout_line, input.to_string());
+//     }
+// }

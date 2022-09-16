@@ -1,5 +1,5 @@
 use once_cell::sync::OnceCell;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 use tauri::Manager;
 use tauri::{AppHandle, Wry};
