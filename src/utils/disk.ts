@@ -24,7 +24,8 @@ async function writeImageDarwin(disk: CrossPlatformDisk, imagePath: string) {
   const store = useStore();
   const unlisten = await listen<string>("image_write_progress", (event) => {
     // console.log(`Got image_write_progress, payload:`, event);
-    const parsed = event.payload as ImageWriteProgressInterface;
+    const payload = event.payload as unknown;
+    const parsed = payload as ImageWriteProgressInterface;
     const progress = new ImageWriteProgress(parsed);
     store.$patch({ progress: progress });
   });
