@@ -2,16 +2,14 @@ use std::fs::File;
 use std::io::IoSliceMut;
 use std::io::Write;
 use std::io::{prelude::*, BufReader};
-use std::os::unix::io::FromRawFd;
-
 use std::process::Command;
 use std::process::Stdio;
 use std::string::String;
+use std::time::Instant;
 
 use anyhow::{Context, Result};
 use human_bytes::human_bytes;
 use log::{error, info, warn};
-use nix::sys::socket;
 use serde::{Deserialize, Serialize};
 
 use super::app;
@@ -21,6 +19,8 @@ pub struct WriteImageProgress {
     // pub percent_complete: i32,
     pub bytes_written: u64,
     pub bytes_total: u64,
+    pub elapsed: u64,
+    pub label: String,
     // pub write_speed: String,
     // pub stdout_line: String,
 }
@@ -55,11 +55,14 @@ pub fn authext_darwin(disk: &str) -> Result<security_framework::authorization::A
 }
 
 #[cfg(target_os = "macos")]
-pub fn write_image_darwin(image_path: String, disk: String) -> Result<()> {
-    use std::{io::BufWriter, os::unix::prelude::RawFd};
-
-    let image_file = File::open(&image_path)?;
-    let bytes_total = image_file.metadata()?.len();
+pub fn unmount_disk_darwin(disk: &str, bytes_total: u64) -> Result<()> {
+    let payload = WriteImageProgress {
+        bytes_written: 0_u64,
+        bytes_total,
+        label: "Unmounting disk".to_string(),
+        elapsed: 0_u64,
+    };
+    app::TauriApp::emit(app::EVENT_IMAGE_WRITE_PROGRESS, payload);
     info!("Attempting to unmount disk {}", &disk);
     // unmount disk
     let unmount_output = Command::new("/usr/sbin/diskutil")
@@ -77,10 +80,40 @@ pub fn write_image_darwin(image_path: String, disk: String) -> Result<()> {
             );
         }
     };
+    Ok(())
+}
+
+#[cfg(target_os = "linux")]
+pub fn write_image(image_path: String, disk: String) -> Result<()> {
+    unimplemented!("write_image is not implemented for target_os=linux")
+}
+
+#[cfg(target_os = "windows")]
+pub fn write_image(image_path: String, disk: String) -> Result<()> {
+    unimplemented!("write_image is not implemented for target_os=windows")
+}
+
+#[cfg(target_os = "macos")]
+pub fn write_image(image_path: String, disk: String) -> Result<()> {
+    use nix::sys::socket;
+    use std::{io::BufWriter, os::unix::io::FromRawFd, os::unix::prelude::RawFd};
+
+    let image_file = File::open(&image_path)?;
+    let bytes_total = image_file.metadata()?.len();
+    // ensure disk is unmounted
+    unmount_disk_darwin(&disk, bytes_total)?;
+
+    let payload = WriteImageProgress {
+        bytes_written: 0_u64,
+        bytes_total,
+        label: "Waiting for authorization".to_string(),
+        elapsed: 0_u64,
+    };
+    app::TauriApp::emit(app::EVENT_IMAGE_WRITE_PROGRESS, payload);
 
     info!("Writing {} to {}", &image_path, &disk);
-    let auth = authext_darwin(&disk)?;
 
+    let auth = authext_darwin(&disk)?;
     let external_form = auth.make_external_form()?;
     let external_form_bytes = unsafe {
         std::slice::from_raw_parts(
@@ -88,7 +121,6 @@ pub fn write_image_darwin(image_path: String, disk: String) -> Result<()> {
             external_form.bytes.len(),
         )
     };
-
     // let (sock_a, mut sock_b) = UnixStream::pair()?;
     let (sock_a, sock_b) = socket::socketpair(
         socket::AddressFamily::Unix,
@@ -130,10 +162,14 @@ pub fn write_image_darwin(image_path: String, disk: String) -> Result<()> {
     let outf = unsafe { File::from_raw_fd(cmsg_fd) };
 
     info!("Received msg: {:?}", msg);
-    let capacity = 2048;
+    // 32 MB
+    let capacity = 16777216;
     let mut bytes_written = 0_u64;
     let mut image_reader = BufReader::with_capacity(capacity, image_file);
     let mut image_writer = BufWriter::with_capacity(capacity, outf);
+    let now = Instant::now();
+    let mut last_update = now.elapsed().as_secs();
+    let update_interval = 1_u64;
 
     loop {
         let buf = image_reader.fill_buf()?;
@@ -143,14 +179,18 @@ pub fn write_image_darwin(image_path: String, disk: String) -> Result<()> {
         image_writer.write_all(buf)?;
         let length = buf.len();
         bytes_written += length as u64;
-        let payload = WriteImageProgress {
-            bytes_written,
-            bytes_total,
-        };
-        app::TauriApp::emit(app::EVENT_IMAGE_WRITE_PROGRESS, payload);
+        let elapsed = now.elapsed().as_secs();
         image_reader.consume(length);
-        image_writer.flush()?;
-        info!("Wrote {} / {} bytes", bytes_written, bytes_total);
+        if elapsed - last_update > update_interval {
+            let payload = WriteImageProgress {
+                bytes_written,
+                bytes_total,
+                label: "Writing...".to_string(),
+                elapsed,
+            };
+            app::TauriApp::emit(app::EVENT_IMAGE_WRITE_PROGRESS, payload);
+        }
+        last_update = elapsed;
     }
     info!("Finished writing {} to {}", &image_path, &disk);
 

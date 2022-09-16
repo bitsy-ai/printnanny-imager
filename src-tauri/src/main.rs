@@ -16,12 +16,8 @@ async fn list_diskdrive_crossplatform() -> String {
 }
 
 #[tauri::command]
-async fn write_image_darwin(image_path: String, disk: String) -> () {
-    if cfg!(target_os = "macos") {
-        disk::write_image_darwin(image_path, disk).unwrap();
-    } else {
-        warn!("write_image_darwin called, but target_os is not macos");
-    }
+async fn write_image(image_path: String, disk: String) -> () {
+    disk::write_image(image_path, disk).unwrap();
 }
 
 fn main() {
@@ -34,7 +30,7 @@ fn main() {
         .plugin(LoggerBuilder::new().targets(targets).build())
         .invoke_handler(tauri::generate_handler![
             list_diskdrive_crossplatform,
-            write_image_darwin
+            write_image
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

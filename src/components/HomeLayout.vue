@@ -10,7 +10,7 @@
 
     <div class="row-span-3 bg-zinc-500">
       <div
-        class="grid grid-rows-2 items-center content-center justify-content-center"
+        class="grid grid-rows-3 items-center content-center justify-content-center"
       >
         <nav aria-label="Progress">
           <ol role="list" class="flex items-center mt-6 justify-center">
@@ -81,6 +81,7 @@
           <router-view name="StorageSelect"></router-view>
           <router-view name="FlashImage"></router-view>
         </div>
+        <ProgressBar />
       </div>
     </div>
   </div>
@@ -97,6 +98,7 @@ import {
   ServerIcon as ServerIconSolid,
   BoltIcon as BoltIconSolid,
 } from "@heroicons/vue/24/solid";
+import ProgressBar from "@/components/steps/ProgressBar.vue";
 
 const router = useRouter();
 const steps = [
