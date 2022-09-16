@@ -87,12 +87,12 @@ pub fn unmount_disk_darwin(disk: &str, bytes_total: u64) -> Result<()> {
 
 #[cfg(target_os = "linux")]
 pub fn write_image(image_path: String, disk: String) -> Result<()> {
-    unimplemented!(("write_image is not implemented for target_os=linux"))
+    unimplemented!("write_image is not implemented for target_os=linux")
 }
 
 #[cfg(target_os = "windows")]
 pub fn write_image(image_path: String, disk: String) -> Result<()> {
-    unimplemented!(("write_image is not implemented for target_os=windows"))
+    unimplemented!("write_image is not implemented for target_os=windows")
 }
 
 #[cfg(target_os = "macos")]
