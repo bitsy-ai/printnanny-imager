@@ -25,6 +25,14 @@
         "open": true,
         "scope": [
           {
+            "name": "list-diskdrive--linux",
+            "cmd": "lsblk",
+            "args": [
+              "--output-all",
+              "--json"
+            ]
+          },
+          {
             "name": "list-diskdrive--windows",
             "cmd": "powershell.exe",
             "args": [
@@ -34,11 +42,13 @@
             ]
           },
           {
-            "name": "list-diskdrive--linux",
-            "cmd": "lsblk",
+            "name": "unmount-disk--darwin",
+            "cmd": "diskutil",
             "args": [
-              "--output-all",
-              "--json"
+              "unmountDisk",
+              {
+                "validator": "\\S+"
+              }
             ]
           },
           {

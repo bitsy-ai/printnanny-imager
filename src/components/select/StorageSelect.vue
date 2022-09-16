@@ -9,9 +9,7 @@
   </div>
   <div v-else-if="!active && store.selectedDisk !== null" class="flex-1">
     <p class="text-center text-stone-50 text-sm truncate">
-      {{ store.selectedDisk?.vendor }} {{ store.selectedDisk?.model }} ({{
-        store.selectedDisk?.size
-      }})
+      {{ store.selectedDisk?.displayHeader() }}
     </p>
     <button
       class="text-center block mx-4 my-4 h-12 w-48 block bg-indigo-400 hover:bg-indigo-500 text-white font-bold py-2 px-4 border-b-4 border-indigo-700 hover:border-indigo-600 rounded"
@@ -24,9 +22,7 @@
     <span
       v-if="store.selectedDisk !== null"
       class="text-center text-stone-50 text-sm truncate"
-      >{{ store.selectedDisk?.vendor }} {{ store.selectedDisk?.model }} ({{
-        store.selectedDisk?.size
-      }})</span
+      >{{ store.selectedDisk?.displayHeader() }}</span
     >
     <button
       class="text-center block mx-4 my-4 h-12 w-48 block bg-indigo-500 hover:bg-indigo-400 text-white font-bold py-2 px-4 border-b-4 border-indigo-700 hover:border-indigo-500 rounded"
@@ -77,7 +73,9 @@
                         >Select removeable USB storage:</DialogTitle
                       >
                       <div v-if="store.loading">
-                        <CustomSpinner text="Loading removeable disks..." />
+                        <CustomSpinner
+                          text="Scanning for removeable drives..."
+                        />
                       </div>
                       <div v-else class="mt-2">
                         <ul
@@ -85,7 +83,7 @@
                         >
                           <li
                             v-for="disk in store.removeableDisks"
-                            :key="disk.name"
+                            :key="disk.displayName"
                             class="w-full rounded-t-lg border-b border-gray-200 dark:border-gray-600"
                           >
                             <div class="flex items-center pl-3">
@@ -100,25 +98,8 @@
                               <label
                                 for="list-radio-license"
                                 class="p-4 ml-2 w-full text-sm font-medium text-gray-900 dark:text-gray-300"
-                                ><strong
-                                  >{{ disk.vendor }} {{ disk.model }}
-                                  <span v-if="disk.partitions.length > 0"
-                                    >({{
-                                      disk.partitions
-                                        .map((p) => p.label)
-                                        .join(", ")
-                                    }})</span
-                                  >
-                                  - {{ disk.size }}</strong
-                                >
-                                <span v-if="disk.partitions.length > 0"
-                                  ><br />Mounted as
-                                  {{
-                                    disk.partitions
-                                      .map((p) => p.mountpoint)
-                                      .join(", ")
-                                  }}</span
-                                >
+                                ><strong> {{ disk.displayHeader() }}</strong>
+                                {{ disk.displayDetail() }}
                               </label>
                             </div>
                           </li>

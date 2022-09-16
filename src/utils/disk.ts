@@ -1,78 +1,43 @@
-import { Child, ChildProcess, Command } from "@tauri-apps/api/shell";
+import { Child, Command } from "@tauri-apps/api/shell";
 import { platform } from "@tauri-apps/api/os";
-import { RemoveableDisk, RemoveableDiskPartition } from "../types";
+import { invoke } from "@tauri-apps/api/tauri";
+import { listen } from '@tauri-apps/api/event';
 
-function parseLinuxDisks(jsonStr: string): Array<RemoveableDisk> {
-  const parsed = JSON.parse(jsonStr);
-  console.log(parsed);
-  if (parsed.blockdevices == undefined) {
-    console.error("Failed to parse lsblk output", parsed);
-    return [];
-  }
-  const usbDevices = parsed.blockdevices.filter(
-    (device: any) => device.tran == "usb"
-  );
-  if (usbDevices.length == 0) {
-    return [];
-  }
-  return usbDevices.map((device: any) => {
-    const partitions =
-      device.children && device.children.length > 0
-        ? device.children.map((part: any) => {
-            return {
-              name: part.name,
-              label: part.label,
-              size: part.size,
-              mountpoint: part.mountpoint,
-            } as RemoveableDiskPartition;
-          })
-        : [];
+import { CrossPlatformDisk } from "../types";
 
-    return {
-      key: device.name,
-      model: device.model,
-      name: device.name,
-      path: device.path,
-      partitions: partitions,
-      serial: device.serial,
-      size: device.size,
-      vendor: device.vendor,
-    } as RemoveableDisk;
+async function listRemoveableDisks(): Promise<
+  Array<CrossPlatformDisk>
+> {
+  const output = await invoke("list_diskdrive_crossplatform");
+  if (output){
+    const parsed = JSON.parse(output as string);
+    return parsed.map((d: any) => new CrossPlatformDisk(d));
+  }
+  return [];
+}
+
+async function writeImageDarwin(disk: CrossPlatformDisk, imagePath: string) {
+  // listen for image progress events
+  const unlisten = await listen<string>("image_write_progress", (event) => {
+    console.log(`Got image_write_progress, payload:`, event);
   });
+
+  console.log("Created listener");
+  
+  await invoke("write_image_darwin", {imagePath: imagePath, disk: disk.path });
+  console.log(`Finished writing ${imagePath} to ${disk.path}`);
+
+  // clean up listener
+  unlisten();
 }
 
-async function listRemoveableDisks(): Promise<Array<RemoveableDisk>> {
-  const platformName = await platform();
-  let output = null as null | ChildProcess;
-  switch (platformName) {
-    case "darwin":
-      output = await new Command("list-diskdrive--macOS").execute();
-      console.log(JSON.parse(output.stdout));
-      return [];
-      break;
-    case "linux":
-      output = await new Command("list-diskdrive--linux").execute();
-      return parseLinuxDisks(output.stdout);
-      break;
-    case "win32":
-      output = await new Command("list-diskdrive--windows").execute();
-      console.log(JSON.parse(output.stdout));
-      return [];
-      break;
-    default:
-      console.error(
-        `${platformName} is not supported. Please open a Github issue to request support.`
-      );
-      return [];
-  }
-}
-
-async function flashImage(disk: RemoveableDisk, imagePath: string) {
+async function flashImage(disk: CrossPlatformDisk, imagePath: string) {
   const platformName = await platform();
   let command = null as null | Command;
   let child = null as null | Child;
   switch (platformName) {
     case "darwin":
+      await writeImageDarwin(disk, imagePath);
       break;
     case "linux":
       command = await new Command("write-image--linux", [
@@ -104,4 +69,4 @@ async function flashImage(disk: RemoveableDisk, imagePath: string) {
   }
 }
 
-export { listRemoveableDisks, parseLinuxDisks, flashImage };
+export { listRemoveableDisks, flashImage };

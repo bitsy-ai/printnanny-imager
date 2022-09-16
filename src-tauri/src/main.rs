@@ -3,8 +3,39 @@
     windows_subsystem = "windows"
 )]
 
+use log::warn;
+use tauri_plugin_log::{LogTarget, LoggerBuilder};
+
+use printnanny_imager::app;
+use printnanny_imager::disk;
+
+#[tauri::command]
+async fn list_diskdrive_crossplatform() -> String {
+    let disks = disk::list_disks().await.unwrap();
+    serde_json::to_string(&disks).unwrap()
+}
+
+#[tauri::command]
+async fn write_image_darwin(image_path: String, disk: String) -> () {
+    if cfg!(target_os = "macos") {
+        disk::write_image_darwin(image_path, disk).unwrap();
+    } else {
+        warn!("write_image_darwin called, but target_os is not macos");
+    }
+}
+
 fn main() {
+    let targets = [LogTarget::LogDir, LogTarget::Stdout, LogTarget::Webview];
     tauri::Builder::default()
+        .setup(|app| {
+            app::TauriApp::set(app.handle());
+            Ok(())
+        })
+        .plugin(LoggerBuilder::new().targets(targets).build())
+        .invoke_handler(tauri::generate_handler![
+            list_diskdrive_crossplatform,
+            write_image_darwin
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
