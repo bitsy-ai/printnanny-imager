@@ -1,5 +1,5 @@
 import { defineStore, acceptHMRUpdate } from "pinia";
-import { CrossPlatformDisk } from "@/types";
+import { CrossPlatformDisk, ImageWriteProgress } from "@/types";
 import { listRemoveableDisks } from "../utils/disk";
 
 export const useStore = defineStore({
@@ -9,6 +9,7 @@ export const useStore = defineStore({
     selectedDisk: null as null | CrossPlatformDisk,
     removeableDisks: [] as Array<CrossPlatformDisk>,
     loading: false,
+    progress: null as null | ImageWriteProgress,
   }),
   actions: {
     async listRemoveableDrives(): Promise<Array<CrossPlatformDisk>> {

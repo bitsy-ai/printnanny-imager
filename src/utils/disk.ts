@@ -1,15 +1,18 @@
 import { Child, Command } from "@tauri-apps/api/shell";
 import { platform } from "@tauri-apps/api/os";
 import { invoke } from "@tauri-apps/api/tauri";
-import { listen } from '@tauri-apps/api/event';
+import { listen } from "@tauri-apps/api/event";
 
-import { CrossPlatformDisk } from "../types";
+import {
+  CrossPlatformDisk,
+  ImageWriteProgress,
+  ImageWriteProgressInterface,
+} from "../types";
+import { useStore } from "@/store";
 
-async function listRemoveableDisks(): Promise<
-  Array<CrossPlatformDisk>
-> {
+async function listRemoveableDisks(): Promise<Array<CrossPlatformDisk>> {
   const output = await invoke("list_diskdrive_crossplatform");
-  if (output){
+  if (output) {
     const parsed = JSON.parse(output as string);
     return parsed.map((d: any) => new CrossPlatformDisk(d));
   }
@@ -18,13 +21,17 @@ async function listRemoveableDisks(): Promise<
 
 async function writeImageDarwin(disk: CrossPlatformDisk, imagePath: string) {
   // listen for image progress events
+  const store = useStore();
   const unlisten = await listen<string>("image_write_progress", (event) => {
-    console.log(`Got image_write_progress, payload:`, event);
+    // console.log(`Got image_write_progress, payload:`, event);
+    const parsed = event.payload as ImageWriteProgressInterface;
+    const progress = new ImageWriteProgress(parsed);
+    store.$patch({ progress: progress });
   });
 
   console.log("Created listener");
-  
-  await invoke("write_image_darwin", {imagePath: imagePath, disk: disk.path });
+
+  await invoke("write_image_darwin", { imagePath: imagePath, disk: disk.path });
   console.log(`Finished writing ${imagePath} to ${disk.path}`);
 
   // clean up listener

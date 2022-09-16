@@ -62,6 +62,37 @@ class CrossPlatformDisk implements CrossPlatformDiskInterface {
   }
 }
 
-export type { SingleBoardComputer, OperatingSystem };
+interface ImageWriteProgressInterface {
+  bytes_written: number;
+  bytes_total: number;
+  elapsed: number;
+  label: string;
+}
 
-export { CrossPlatformDisk };
+class ImageWriteProgress {
+  bytes_written: number;
+  bytes_total: number;
+  elapsed: number;
+  label: string;
+
+  constructor(args: ImageWriteProgressInterface) {
+    this.bytes_total = args.bytes_total;
+    this.bytes_written = args.bytes_written;
+    this.label = args.label;
+    this.elapsed = args.elapsed;
+  }
+
+  display_percent(): string {
+    const perc = (this.bytes_written / this.bytes_total) * 100;
+    console.log(perc);
+    return `${Math.round(perc)}%`;
+  }
+}
+
+export type {
+  SingleBoardComputer,
+  OperatingSystem,
+  ImageWriteProgressInterface,
+};
+
+export { CrossPlatformDisk, ImageWriteProgress };
