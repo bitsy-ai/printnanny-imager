@@ -183,7 +183,7 @@ pub struct DarwinDisk {
     #[serde(rename(deserialize = "VolumeName"))]
     pub volume_name: String,
 }
-
+#[cfg(target_os = "macos")]
 impl DarwinDisk {
     pub fn is_whole_disk(&self) -> bool {
         self.parent_whole_disk == self.device_id
@@ -336,16 +336,24 @@ impl From<&DarwinDisk> for CrossPlatformDisk {
     }
 }
 
+#[cfg(target_os = "macos")]
 pub async fn list_disks() -> Result<Vec<CrossPlatformDisk>> {
-    if cfg!(target_os = "macos") {
-        let result = list_removeable_disks_darwin()
-            .await?
-            .iter()
-            .map(CrossPlatformDisk::from)
-            .collect();
-        return Ok(result);
-    }
-    Ok(vec![])
+    let result = list_removeable_disks_darwin()
+        .await?
+        .iter()
+        .map(CrossPlatformDisk::from)
+        .collect();
+    return Ok(result);
+}
+
+#[cfg(target_os = "linux")]
+pub async fn list_disks() -> Result<Vec<CrossPlatformDisk>> {
+    unimplemented!("list_disks is not implemented for target_os=linux")
+}
+
+#[cfg(target_os = "windows")]
+pub async fn list_disks() -> Result<Vec<CrossPlatformDisk>> {
+    unimplemented!("list_disks is not implemented for target_os=windows")
 }
 
 // #[cfg(test)]
