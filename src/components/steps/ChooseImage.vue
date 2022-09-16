@@ -49,7 +49,7 @@ async function openFile() {
     filters: [
       {
         name: "Image",
-        extensions: ["wic", "zip", "tar.gz", "img"],
+        extensions: ["wic", "zip", "tar.gz", "img", "iso"],
       },
     ],
   })) as string | null;

@@ -32,7 +32,7 @@ async function writeImageDarwin(disk: CrossPlatformDisk, imagePath: string) {
 
   console.log("Created listener");
 
-  await invoke("write_image_darwin", { imagePath: imagePath, disk: disk.path });
+  await invoke("write_image", { imagePath: imagePath, disk: disk.path });
   console.log(`Finished writing ${imagePath} to ${disk.path}`);
 
   // clean up listener

@@ -9,7 +9,7 @@
   </div>
   <div v-else-if="!active && store.selectedDisk !== null" class="flex-1">
     <p class="text-center text-stone-50 text-sm truncate">
-      {{ store.selectedDisk?.displayHeader() }}
+      {{ truncate(store.selectedDisk?.displayHeader()) }}
     </p>
     <button
       class="text-center block mx-4 my-4 h-12 w-48 block bg-indigo-400 hover:bg-indigo-500 text-white font-bold py-2 px-4 border-b-4 border-indigo-700 hover:border-indigo-600 rounded"
@@ -147,6 +147,7 @@ import {
   TransitionRoot,
 } from "@headlessui/vue";
 import CustomSpinner from "../spinner/CustomSpinner.vue";
+import { truncate } from "@/utils/text";
 
 const router = useRouter();
 const key = "select-storage";
