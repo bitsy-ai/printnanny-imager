@@ -1,12 +1,12 @@
 [package]
 name = "printnanny-imager"
-version = "0.0.0"
+version = "0.1.0"
 description = "A Tauri App"
 authors = ["you"]
 license = ""
 repository = ""
 edition = "2021"
-rust-version = "1.57"
+rust-version = "1.65"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -16,7 +16,9 @@ tauri-build = { version = "1.0.0", features = [] }
 [dependencies]
 anyhow = "1.0.64"
 human_bytes = "0.3.1"
+libc = { version = "0.2" }
 log = "0.4.17"                 # A lightweight logging facade for Rust 
+nix = "0.25.0"                     # Rust friendly bindings to *nix APIs
 regex = "1.6.0"                    # An implementation of regular expressions for Rust.
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }

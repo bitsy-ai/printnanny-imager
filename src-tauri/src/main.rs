@@ -18,7 +18,7 @@ async fn list_diskdrive_crossplatform() -> String {
 #[tauri::command]
 async fn write_image_darwin(image_path: String, disk: String) -> () {
     if cfg!(target_os = "macos") {
-        disk::write_image_darwin(image_path, disk).await.unwrap();
+        disk::write_image_darwin(image_path, disk).unwrap();
     } else {
         warn!("write_image_darwin called, but target_os is not macos");
     }

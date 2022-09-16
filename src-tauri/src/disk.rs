@@ -1,5 +1,9 @@
+use std::fs::File;
+use std::io::IoSliceMut;
 use std::io::Write;
-use std::io::{self, prelude::*, BufReader};
+use std::io::{prelude::*, BufReader};
+use std::os::unix::io::FromRawFd;
+
 use std::process::Command;
 use std::process::Stdio;
 use std::string::String;
@@ -7,6 +11,8 @@ use std::string::String;
 use anyhow::{Context, Result};
 use human_bytes::human_bytes;
 use log::{error, info, warn};
+use nix::sys::socket;
+use nix::unistd::pipe;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 
@@ -14,53 +20,12 @@ use super::app;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct WriteImageProgress {
-    pub percent_complete: i32,
+    // pub percent_complete: i32,
     pub bytes_written: u64,
     pub bytes_total: u64,
-    pub write_speed: String,
-    pub stdout_line: String,
+    // pub write_speed: String,
+    // pub stdout_line: String,
 }
-
-impl WriteImageProgress {
-    // parse dd status=progress output
-    // Example: 3112173568 bytes (3112 MB, 2968 MiB) transferred 334.790s, 9296 kB/s
-    fn new_darwin(stdout_line: String, bytes_total: u64) -> Self {
-        let speed_split = stdout_line.split(", ");
-        let write_speed = match speed_split.last() {
-            Some(s) => s,
-            None => "",
-        }
-        .to_string();
-        let bytes_transferred_re = Regex::new(r"(\d+)").expect("Regrex creation failed");
-        let caps = bytes_transferred_re
-            .captures(&stdout_line)
-            .expect("Regex captures failed ");
-        let bytes_written: u64 = match caps.get(0) {
-            Some(b) => b.as_str().parse().unwrap_or_else(|_| 0 as u64),
-            None => 0 as u64,
-        };
-        let percent_complete =
-            ((bytes_written as f64) / (bytes_total as f64) * 100.0).round() as i32;
-
-        Self {
-            write_speed,
-            percent_complete,
-            stdout_line,
-            bytes_total,
-            bytes_written,
-        }
-    }
-    pub fn new(stdout_line: &[u8], bytes_total: u64) -> Self {
-        let stdout_line = String::from_utf8_lossy(stdout_line).to_string();
-        if cfg!(target_os = "macos") {
-            WriteImageProgress::new_darwin(stdout_line, bytes_total)
-        } else {
-            unimplemented!("WriteImageProgress is not implemented for target_os",)
-        }
-    }
-}
-
-// pub fn parse_dd_progress(stdout_line: &[u8]) -> {}
 
 #[cfg(target_os = "macos")]
 pub fn empty_darwin_disk_list() -> Vec<DarwinDisk> {
@@ -89,14 +54,14 @@ pub fn authext_darwin(disk: &str) -> Result<security_framework::authorization::A
     // create authorization object
     let auth = create_darwin_authorization(disk)?;
     Ok(auth)
-    // let form = auth.make_external_form()?;
-    // let inbytes =
-    //     unsafe { slice::from_raw_parts(form.bytes.as_ptr() as *const u8, form.bytes.len()) };
-    // Ok(inbytes.to_vec())
 }
 
 #[cfg(target_os = "macos")]
-pub async fn write_image_darwin(image_path: String, disk: String) -> Result<()> {
+pub fn write_image_darwin(image_path: String, disk: String) -> Result<()> {
+    use std::{io::BufWriter, os::unix::prelude::RawFd};
+
+    let image_file = File::open(&image_path)?;
+    let bytes_total = image_file.metadata()?.len();
     info!("Attempting to unmount disk {}", &disk);
     // unmount disk
     let unmount_output = Command::new("/usr/sbin/diskutil")
@@ -118,30 +83,78 @@ pub async fn write_image_darwin(image_path: String, disk: String) -> Result<()> 
     info!("Writing {} to {}", &image_path, &disk);
     let auth = authext_darwin(&disk)?;
 
-    let dd_handle = auth.execute_with_privileges_piped(
-        "/bin/dd",
-        &[
-            format!("if={}", &image_path),
-            format!("of={}", &disk),
-            "bs=4M".to_string(),
-            "status=progress".to_string(),
-        ],
-        security_framework::authorization::Flags::DEFAULTS,
+    let external_form = auth.make_external_form()?;
+    let external_form_bytes = unsafe {
+        std::slice::from_raw_parts(
+            external_form.bytes.as_ptr() as *const u8,
+            external_form.bytes.len(),
+        )
+    };
+
+    // let (sock_a, mut sock_b) = UnixStream::pair()?;
+    let (sock_a, sock_b) = socket::socketpair(
+        socket::AddressFamily::Unix,
+        socket::SockType::Stream,
+        None,
+        socket::SockFlag::empty(),
     )?;
-    info!("Created handle for /bin/dd {:?}", dd_handle);
 
-    let reader = BufReader::new(dd_handle);
-    for line in reader.lines() {
-        let line = line?;
-        let payload = app::EventPayload {
-            msg: line.to_string(),
-            event_name: app::EVENT_IMAGE_WRITE_PROGRESS.to_string(),
+    let auth_stdout_fd = unsafe { Stdio::from_raw_fd(sock_a) };
+    // let stdout_fd: RawFd = sock_a.into_raw_fd();
+    // let stdoutio = unsafe { Stdio::from_raw_fd(stdout_fd) };
+    let child = Command::new("/usr/libexec/authopen")
+        .stdin(Stdio::piped())
+        .stdout(auth_stdout_fd)
+        .args(&["-stdoutpipe", "-extauth", "-w", &disk])
+        .spawn()?;
+
+    // write AuthorizationExternalForm bytes to stdin, expected by `-extauth` flag
+    let mut auth_stdin = child.stdin.unwrap();
+    auth_stdin.write_all(external_form_bytes)?;
+
+    // -stdoutpipe will sendmsg with SCM_RIGHTS msg type, containing a file descriptor
+    let mut data = [1; 8];
+    let iov = IoSliceMut::new(&mut data);
+    let mut cmsg_buffer = nix::cmsg_space!([RawFd; 1]);
+
+    let msg = socket::recvmsg::<socket::UnixAddr>(
+        sock_b,
+        &mut [iov],
+        Some(&mut cmsg_buffer),
+        socket::MsgFlags::empty(),
+    )?;
+    let cmsg_fd: i32 = match msg.cmsgs().next() {
+        Some(socket::ControlMessageOwned::ScmRights(fds)) => fds[0],
+        Some(_) => panic!("Unexpected control message"),
+        None => panic!("No control message"),
+    };
+
+    let outf = unsafe { File::from_raw_fd(cmsg_fd) };
+
+    info!("Received msg: {:?}", msg);
+    let capacity = 2048;
+    let mut bytes_written = 0 as u64;
+    let mut image_reader = BufReader::with_capacity(capacity, image_file);
+    let mut image_writer = BufWriter::with_capacity(capacity, outf);
+
+    loop {
+        let buf = image_reader.fill_buf()?;
+        if buf.len() == 0 {
+            break;
+        }
+        image_writer.write_all(buf)?;
+        let length = buf.len();
+        bytes_written += length as u64;
+        let payload = WriteImageProgress {
+            bytes_written,
+            bytes_total,
         };
-        app::TauriApp::emit("write_image_progress", payload);
-        info!("{}", &line);
+        app::TauriApp::emit(app::EVENT_IMAGE_WRITE_PROGRESS, payload);
+        image_reader.consume(length);
+        image_writer.flush()?;
+        info!("Wrote {} / {} bytes", bytes_written, bytes_total);
     }
-
-    info!("Finished reading lines from fd");
+    info!("Finished writing {} to {}", &image_path, &disk);
 
     Ok(())
 }
@@ -255,7 +268,6 @@ pub async fn list_removeable_disks_darwin() -> Result<Vec<DarwinDisk>> {
             .stdout(Stdio::piped())
             .output()
             .context(format!("Command failed: diskutil info -plist {}", disk))?;
-        // let disks_info_plist_stdio = disks_info_plist_child.stdout;
 
         // convert plist to json
         let mut disks_info_json_child = Command::new("plutil")
@@ -346,17 +358,13 @@ mod tests {
     #[test]
     fn test_parse_macos_dd_progress() {
         let bytes_total = 6224347136 as u64;
-        let input =
-            "3112173568 bytes (3112 MB, 2968 MiB) transferred 334.790s, 9296 kB/s".as_bytes();
+        let input = "3112173568 bytes (3112 MB, 2968 MiB) transferred 334.790s, 9296 kB/s";
         let event = WriteImageProgress::new(input, bytes_total);
 
         assert_eq!(event.bytes_total, bytes_total);
         assert_eq!(event.bytes_written, 3112173568 as u64);
         assert_eq!(event.percent_complete, 50);
         assert_eq!(event.write_speed, "9296 kB/s");
-        assert_eq!(
-            event.stdout_line,
-            String::from_utf8_lossy(input).to_string()
-        );
+        assert_eq!(event.stdout_line, input.to_string());
     }
 }

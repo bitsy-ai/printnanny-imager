@@ -1,6 +1,7 @@
 import { Child, Command } from "@tauri-apps/api/shell";
 import { platform } from "@tauri-apps/api/os";
 import { invoke } from "@tauri-apps/api/tauri";
+import { listen } from '@tauri-apps/api/event';
 
 import { CrossPlatformDisk } from "../types";
 
@@ -15,17 +16,28 @@ async function listRemoveableDisks(): Promise<
   return [];
 }
 
+async function writeImageDarwin(disk: CrossPlatformDisk, imagePath: string) {
+  // listen for image progress events
+  const unlisten = await listen<string>("image_write_progress", (event) => {
+    console.log(`Got image_write_progress, payload:`, event);
+  });
+
+  console.log("Created listener");
+  
+  await invoke("write_image_darwin", {imagePath: imagePath, disk: disk.path });
+  console.log(`Finished writing ${imagePath} to ${disk.path}`);
+
+  // clean up listener
+  unlisten();
+}
+
 async function flashImage(disk: CrossPlatformDisk, imagePath: string) {
   const platformName = await platform();
   let command = null as null | Command;
   let child = null as null | Child;
   switch (platformName) {
     case "darwin":
-      // unmount disk
-      await new Command("unmount-disk--macos", ["unmountDisk", disk.path]);
-      console.log(`Unmounted disk ${disk.path}`);
-      await invoke("write_image_darwin", {imagePath: imagePath, disk: disk.path });
-      console.log(`Finished writing ${imagePath} to ${disk.path}`);
+      await writeImageDarwin(disk, imagePath);
       break;
     case "linux":
       command = await new Command("write-image--linux", [
