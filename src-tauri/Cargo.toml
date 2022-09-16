@@ -17,7 +17,6 @@ tauri-build = { version = "1.0.0", features = [] }
 anyhow = "1.0.64"
 human_bytes = "0.3.1"
 log = "0.4.17"                 # A lightweight logging facade for Rust 
-nix = "0.25.0"                     # Rust friendly bindings to *nix APIs
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 tauri = { version = "1.0.0", features = ["dialog-all", "os-all", "shell-all"] }
@@ -37,5 +36,5 @@ custom-protocol = [ "tauri/custom-protocol" ]
 
 
 [target.'cfg(target_os = "macos")'.dependencies]
-socketpair = { version = "0.16.0" }
+nix = "0.25.0"                     # Rust friendly bindings to *nix APIs
 security-framework = { version = "2.6.1" }
