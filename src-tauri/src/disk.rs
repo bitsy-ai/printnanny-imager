@@ -85,8 +85,18 @@ pub fn unmount_disk_darwin(disk: &str, bytes_total: u64) -> Result<()> {
     Ok(())
 }
 
+#[cfg(target_os = "linux")]
+pub fn write_image(image_path: String, disk: String) -> Result<()> {
+    unimplemented!(("write_image is not implemented for target_os=linux"))
+}
+
+#[cfg(target_os = "windows")]
+pub fn write_image(image_path: String, disk: String) -> Result<()> {
+    unimplemented!(("write_image is not implemented for target_os=windows"))
+}
+
 #[cfg(target_os = "macos")]
-pub fn write_image_darwin(image_path: String, disk: String) -> Result<()> {
+pub fn write_image(image_path: String, disk: String) -> Result<()> {
     use std::{io::BufWriter, os::unix::prelude::RawFd};
 
     let image_file = File::open(&image_path)?;
