@@ -8,10 +8,11 @@ use tauri_plugin_log::{LogTarget, LoggerBuilder};
 
 use printnanny_imager::app;
 use printnanny_imager::disk;
+use printnanny_imager::disklist;
 
 #[tauri::command]
 async fn list_diskdrive_crossplatform() -> String {
-    let disks = disk::list_disks().await.unwrap();
+    let disks = disklist::list_disks().await.unwrap();
     serde_json::to_string(&disks).unwrap()
 }
 
