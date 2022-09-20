@@ -3,7 +3,8 @@ use std::process::Command;
 use std::process::Stdio;
 use std::string::String;
 use std::time::Instant;
-
+use std::fs::File;
+use std::{io::BufWriter};
 use anyhow::{Context, Result};
 use human_bytes::human_bytes;
 use log::{error, info, warn};
@@ -81,8 +82,70 @@ pub fn write_image(image_path: String, disk: String) -> Result<()> {
 }
 
 #[cfg(target_os = "windows")]
+pub fn partition_disk(disk: &str)-> Result<()> {
+    use regex::Regex;
+    let re = Regex::new(r"PHYSICALDRIVE(\d+)$")?;
+    let caps = re.captures(disk).unwrap();
+    let drivenum = caps.get(0).unwrap().as_str();
+    Command::new("diskpart.ext")
+        .args([&format!("select disk {}", &drivenum), "clean", "rescan"]).output()?;
+    info!("Success! Cleaned {} - drive is now RAW and writeable with Windows direct access policies", &disk);
+    Ok(())
+}
+
+#[cfg(target_os = "windows")]
 pub fn write_image(image_path: String, disk: String) -> Result<()> {
-    unimplemented!("write_image is not implemented for target_os=windows")
+    let image_file = File::open(&image_path)?;
+    let bytes_total = image_file.metadata()?.len();
+    let payload = WriteImageProgress {
+        bytes_written: 0_u64,
+        bytes_total,
+        label: "Formatting disk".to_string(),
+        elapsed: 0_u64,
+    };
+    app::TauriApp::emit(app::EVENT_IMAGE_WRITE_PROGRESS, payload);
+    partition_disk(&disk)?;
+    let payload = WriteImageProgress {
+        bytes_written: 0_u64,
+        bytes_total,
+        label: "Copying image to disk".to_string(),
+        elapsed: 0_u64,
+    };
+    app::TauriApp::emit(app::EVENT_IMAGE_WRITE_PROGRESS, payload);
+
+    let image_file = File::open(&image_path)?;
+    let outf = File::open(&disk)?;
+    // 32 MB
+    let capacity = 16777216;
+    let mut bytes_written = 0_u64;
+    let mut image_reader = BufReader::with_capacity(capacity, image_file);
+    let mut image_writer = BufWriter::with_capacity(capacity, outf);
+    let now = Instant::now();
+    let mut last_update = now.elapsed().as_secs();
+    let update_interval = 1_u64;
+    loop {
+        let buf = image_reader.fill_buf()?;
+        if buf.is_empty() {
+            break;
+        }
+        image_writer.write_all(buf)?;
+        let length = buf.len();
+        bytes_written += length as u64;
+        let elapsed = now.elapsed().as_secs();
+        image_reader.consume(length);
+        if elapsed - last_update > update_interval {
+            let payload = WriteImageProgress {
+                bytes_written,
+                bytes_total,
+                label: "Writing...".to_string(),
+                elapsed,
+            };
+            app::TauriApp::emit(app::EVENT_IMAGE_WRITE_PROGRESS, payload);
+        }
+        last_update = elapsed;
+    }
+    info!("Finished writing {} to {}", &image_path, &disk);
+    Ok(())
 }
 
 #[cfg(target_os = "macos")]

@@ -39,3 +39,7 @@ security-framework = { version = "2.6.1" }
 
 [target.'cfg(unix)'.dependencies]
 nix = {version = "0.25.0" }                     # Rust friendly bindings to *nix APIs
+
+[target.'cfg(windows)'.dependencies]
+windows = {version = "0.40" }                     # Rust friendly bindings to WindowsRT/C++ APIs
+regex = "1"
