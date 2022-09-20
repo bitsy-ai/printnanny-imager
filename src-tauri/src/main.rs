@@ -17,13 +17,13 @@ async fn list_diskdrive_crossplatform() -> String {
 }
 
 #[tauri::command]
-async fn write_image(image_path: String, disk: String) -> () {
-    disk::write_image(image_path, disk).unwrap();
+async fn write_image(image_path: String, disk_path: String, device_id: String) -> () {
+    disk::write_image(image_path, disk_path, device_id).unwrap();
 }
 
 fn main() {
     let targets = [LogTarget::LogDir, LogTarget::Stdout, LogTarget::Webview];
-    tauri::Builder::default()
+    let tauri_builder = tauri::Builder::default()
         .setup(|app| {
             app::TauriApp::set(app.handle());
             Ok(())
@@ -32,7 +32,6 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             list_diskdrive_crossplatform,
             write_image
-        ])
-        .run(tauri::generate_context!())
+        ]).run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

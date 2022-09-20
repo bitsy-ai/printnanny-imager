@@ -19,7 +19,7 @@ async function listRemoveableDisks(): Promise<Array<CrossPlatformDisk>> {
   return [];
 }
 
-async function writeImageDarwin(disk: CrossPlatformDisk, imagePath: string) {
+async function writeImage(disk: CrossPlatformDisk, imagePath: string) {
   // listen for image progress events
   const store = useStore();
   const unlisten = await listen<string>("image_write_progress", (event) => {
@@ -32,7 +32,7 @@ async function writeImageDarwin(disk: CrossPlatformDisk, imagePath: string) {
 
   console.log("Created listener");
 
-  await invoke("write_image", { imagePath: imagePath, disk: disk.path });
+  await invoke("write_image", { imagePath: imagePath, diskPath: disk.path, deviceId: disk.deviceId });
   console.log(`Finished writing ${imagePath} to ${disk.path}`);
 
   // clean up listener
@@ -44,9 +44,6 @@ async function flashImage(disk: CrossPlatformDisk, imagePath: string) {
   let command = null as null | Command;
   let child = null as null | Child;
   switch (platformName) {
-    case "darwin":
-      await writeImageDarwin(disk, imagePath);
-      break;
     case "linux":
       command = await new Command("write-image--linux", [
         "dd",
@@ -73,7 +70,9 @@ async function flashImage(disk: CrossPlatformDisk, imagePath: string) {
       console.log("flashImage pid: ", child.pid);
       break;
     case "win32":
-      break;
+    case "darwin":
+        await writeImage(disk, imagePath);
+        break;
   }
 }
 

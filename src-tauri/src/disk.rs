@@ -5,7 +5,7 @@ use std::string::String;
 use std::time::Instant;
 use std::fs::File;
 use std::{io::BufWriter};
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
 use human_bytes::human_bytes;
 use log::{error, info, warn};
 use serde::{Deserialize, Serialize};
@@ -77,24 +77,98 @@ pub fn unmount_disk_darwin(disk: &str, bytes_total: u64) -> Result<()> {
 }
 
 #[cfg(target_os = "linux")]
-pub fn write_image(image_path: String, disk: String) -> Result<()> {
+pub fn write_image(image_path: String, disk: String, device_id: String) -> Result<()> {
     unimplemented!("write_image is not implemented for target_os=linux")
 }
 
 #[cfg(target_os = "windows")]
-pub fn partition_disk(disk: &str)-> Result<()> {
+pub fn partition_disk_windows(disk: &str)-> Result<()> {
     use regex::Regex;
-    let re = Regex::new(r"PHYSICALDRIVE(\d+)$")?;
+    let re = Regex::new(r"PHYSICALDRIVE(\d+)")?;
     let caps = re.captures(disk).unwrap();
-    let drivenum = caps.get(0).unwrap().as_str();
-    Command::new("diskpart.ext")
-        .args([&format!("select disk {}", &drivenum), "clean", "rescan"]).output()?;
-    info!("Success! Cleaned {} - drive is now RAW and writeable with Windows direct access policies", &disk);
+    let drivenum = caps.get(1).unwrap().as_str();
+    info!("Attempting to reformat disk {}", &disk);
+
+
+    // write diskpart script to temp_dir
+    let mut f = tempfile::NamedTempFile::new()?;
+    let diskpart_script = format!("select disk {}
+    clean
+    create partition primary
+    select partition 1
+    assign
+    format fs=fat32 quick
+    set id=0e
+    rescan
+    ", drivenum);
+    info!("Running diskpart script {}", &diskpart_script);
+    f.write_all(&diskpart_script.as_bytes())?;
+
+    let child = Command::new("diskpart.exe")
+        .args(
+            ["/s", &f.path().display().to_string()]
+        ).spawn()?;
+    info!("Running diskpart cmd {:?}", &child);
+    let output = child.wait_with_output()?;
+    match output.status.success() {
+        true => {
+            info!("Success! Cleaned {} - drive is now RAW and writeable with Windows direct access policies", &disk);
+            Ok(())
+        },
+        false => {
+            error!("Error running disk format {:?}",&output);
+            Err(anyhow!("Error running disk format  {:?}",  &output))
+        }
+    }?;
     Ok(())
 }
 
+// WindowsDriveToDiskPartition is serialized from:
+// GET-WMIOBJECT -query 'ASSOCIATORS OF {Win32_DiskDrive.DeviceID="<id>" } WHERE AssocClass = Win32_DiskDriveToDiskPartition' | ConvertTo-Json
 #[cfg(target_os = "windows")]
-pub fn write_image(image_path: String, disk: String) -> Result<()> {
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct WindowsDriveToDiskPartition {
+    #[serde(rename(deserialize = "DeviceID"))]
+    pub device_id: String,
+}
+
+// WindowsLogicalDisk serialized from:
+// example device_id: "3"
+// GET-WMIOBJECT -query 'ASSOCIATORS OF {Win32_DiskPartition.DeviceID="<device_id>" } WHERE AssocClass = Win32_DiskDriveToDiskPartition' | ConvertTo-Json
+#[cfg(target_os = "windows")]
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct WindowsLogicalDisk {
+    #[serde(rename(deserialize = "DeviceID"))]
+    pub device_id: String,
+}
+
+// Reverse query for letter associated with logical disk partition
+// example device_id: "Disk #3, Partition #0"
+// ref: https://learn.microsoft.com/en-us/windows/win32/wmisdk/wmi-tasks--disks-and-file-systems
+#[cfg(target_os = "windows")]
+fn get_drive_letter_windows(device_id: &str) -> Result<String> {
+    // query associated data model
+    let query = format!("'ASSOCIATORS OF {{Win32_DiskDrive.DeviceID={device_id:?}}} WHERE AssocClass = Win32_DiskDriveToDiskPartition'", device_id=device_id);
+    let output = Command::new("powershell.exe")
+        .args(["GET-WMIOBJECT", "-query", &query, "|", "ConvertTo-Json"]).output()?;
+
+    info!("Query {} output {:?}", &query, &output);
+    let assoc_result_utf8 = String::from_utf8_lossy(&output.stdout).to_string();
+    let drive_to_disk_partition: WindowsDriveToDiskPartition = serde_json::from_str(&assoc_result_utf8).context(format!("Failed to deserialize Win32_DiskDriveToDiskPartition output: {}", &assoc_result_utf8))?;
+
+    let query = format!("'ASSOCIATORS OF {{Win32_DiskPartition.DeviceId=\"{device_id}\"}} WHERE AssocClass = Win32_LogicalDiskToPartition'", device_id=drive_to_disk_partition.device_id);
+    let output = Command::new("powershell.exe")
+        .args(["GET-WMIOBJECT", "-query", &query, "|", "ConvertTo-Json"]).output()?;
+    info!("Query {} output {:?}", &query, &output);
+
+    let assoc_result_utf8 = String::from_utf8_lossy(&output.stdout).to_string();
+    let logical_disk: WindowsLogicalDisk = serde_json::from_str(&assoc_result_utf8).context(format!("Failed to deserialize Win32_LogicalDiskToPartition output: {}", &assoc_result_utf8))?;
+    // WindowsLogicalDisk.device_id will be the mounted drive letter, e.g. "D:"
+    Ok(logical_disk.device_id)
+}
+
+#[cfg(target_os = "windows")]
+pub fn write_image(image_path: String, disk_path: String, device_id: String) -> Result<()> {
     let image_file = File::open(&image_path)?;
     let bytes_total = image_file.metadata()?.len();
     let payload = WriteImageProgress {
@@ -104,7 +178,7 @@ pub fn write_image(image_path: String, disk: String) -> Result<()> {
         elapsed: 0_u64,
     };
     app::TauriApp::emit(app::EVENT_IMAGE_WRITE_PROGRESS, payload);
-    partition_disk(&disk)?;
+    partition_disk_windows(&disk_path)?;
     let payload = WriteImageProgress {
         bytes_written: 0_u64,
         bytes_total,
@@ -113,8 +187,14 @@ pub fn write_image(image_path: String, disk: String) -> Result<()> {
     };
     app::TauriApp::emit(app::EVENT_IMAGE_WRITE_PROGRESS, payload);
 
+    // Reverse query for letter associated with logical disk partition
+    // ref: https://learn.microsoft.com/en-us/windows/win32/wmisdk/wmi-tasks--disks-and-file-systems
+    let drive_letter = get_drive_letter_windows(&device_id)?;
+
     let image_file = File::open(&image_path)?;
-    let outf = File::open(&disk)?;
+    let outf  = std::fs::OpenOptions::new()
+            .create_new(true).write(true)
+            .open(&disk_path)?;
     // 32 MB
     let capacity = 16777216;
     let mut bytes_written = 0_u64;
@@ -123,6 +203,8 @@ pub fn write_image(image_path: String, disk: String) -> Result<()> {
     let now = Instant::now();
     let mut last_update = now.elapsed().as_secs();
     let update_interval = 1_u64;
+
+    info!("Writing image {} to {}", &image_path, &disk_path);
     loop {
         let buf = image_reader.fill_buf()?;
         if buf.is_empty() {
@@ -144,12 +226,12 @@ pub fn write_image(image_path: String, disk: String) -> Result<()> {
         }
         last_update = elapsed;
     }
-    info!("Finished writing {} to {}", &image_path, &disk);
+    info!("Finished writing {} to {}", &image_path, &disk_path);
     Ok(())
 }
 
 #[cfg(target_os = "macos")]
-pub fn write_image(image_path: String, disk: String) -> Result<()> {
+pub fn write_image(image_path: String, disk: String, _deviceId: String) -> Result<()> {
     use nix::sys::socket;
     use std::{io::BufWriter, os::unix::io::FromRawFd, os::unix::prelude::RawFd};
 

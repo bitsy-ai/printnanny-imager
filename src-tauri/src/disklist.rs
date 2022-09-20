@@ -78,8 +78,6 @@ pub struct WindowsDisk {
     pub media_type: String,
     #[serde(rename(deserialize = "InterfaceType"))]
     pub interface_type: String,
-    #[serde(rename(deserialize = "__PATH"))]
-    pub path: String,
     #[serde(rename(deserialize = "Name"))]
     pub volume_name: String,
     #[serde(rename(deserialize = "SerialNumber"))]
@@ -136,7 +134,7 @@ impl From<&WindowsDisk> for CrossPlatformDisk {
             bus_protocol: disk.interface_type.clone(),
             display_name: disk.display_name.clone(),
             device_id: disk.device_id.clone(),
-            path: disk.path.clone(),
+            path: disk.volume_name.clone(),
             size: disk.size,
             size_pretty: human_bytes(disk.size as f64),
             is_removable: disk.media_type == "Removable Media", // 7 -> "Supports Removable Media" capability
