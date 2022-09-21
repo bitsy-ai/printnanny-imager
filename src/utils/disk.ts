@@ -32,7 +32,11 @@ async function writeImage(disk: CrossPlatformDisk, imagePath: string) {
 
   console.log("Created listener");
 
-  await invoke("write_image", { imagePath: imagePath, diskPath: disk.path, deviceId: disk.deviceId });
+  await invoke("write_image", {
+    imagePath: imagePath,
+    diskPath: disk.path,
+    deviceId: disk.deviceId,
+  });
   console.log(`Finished writing ${imagePath} to ${disk.path}`);
 
   // clean up listener
@@ -71,8 +75,8 @@ async function flashImage(disk: CrossPlatformDisk, imagePath: string) {
       break;
     case "win32":
     case "darwin":
-        await writeImage(disk, imagePath);
-        break;
+      await writeImage(disk, imagePath);
+      break;
   }
 }
 
