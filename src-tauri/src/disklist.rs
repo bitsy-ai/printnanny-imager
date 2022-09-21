@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 
 #[cfg(unix)]
 use {
+    anyhow::Context,
     std::fs::File,
     std::io::IoSliceMut,
     std::io::Write,
