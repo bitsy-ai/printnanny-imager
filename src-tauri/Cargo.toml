@@ -43,7 +43,13 @@ security-framework = { version = "2.6.1" }
 nix = {version = "0.25.0" }                     # Rust friendly bindings to *nix APIs
 
 [target.'cfg(windows)'.dependencies]
-windows = {version = "0.40" }                     # Rust friendly bindings to WindowsRT/C++ APIs
+windows = {version = "0.40", features = [
+    "Win32_Storage_FileSystem", 
+    "Win32_Foundation", 
+    "Win32_Security",
+    "Win32_System_IO",
+    "Win32_System_Ioctl"
+    ] }                     # Rust friendly bindings to WindowsRT/C++ APIs
 embed-resource = "1.7.3"
 regex = "1"
 windows-drives = "0.5.0"
