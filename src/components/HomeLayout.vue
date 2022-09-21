@@ -1,16 +1,16 @@
 <template>
-  <div class="flex grid grid-rows-4 max-h-full">
+  <div class="flex grid grid-rows-3 max-h-screen">
     <div class="flex-1 row-span-1 bg-stone-50">
       <img
         src="@/assets/logo/logo-rect-light.svg"
-        class="w-1/2 m-auto pt-2 pb-2"
+        class="m-auto h-full pt-2 pb-2"
         alt="PrintNanny Logo"
       />
     </div>
 
-    <div class="row-span-3 bg-zinc-500">
+    <div class="row-span-2 bg-zinc-500">
       <div
-        class="grid grid-rows-3 items-center content-center justify-content-center"
+        class="grid grid-rows-3 bg-zinc-500 items-center content-center justify-content-center"
       >
         <nav aria-label="Progress">
           <ol role="list" class="flex items-center mt-6 justify-center">
