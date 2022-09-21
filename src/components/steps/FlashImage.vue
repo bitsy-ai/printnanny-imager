@@ -10,7 +10,7 @@
       Flash!
     </button>
   </div>
-  <div v-else class="flex-1">
+  <div v-else class="flex-1 h-20">
     <p class="text-center text-stone-50 text-sm truncate">
       {{ imageWriterStatus }}
     </p>
