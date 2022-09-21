@@ -1,18 +1,21 @@
-use std::fs::File;
-use std::io::IoSliceMut;
-use std::io::Write;
-use std::io::{prelude::*, BufReader};
-use std::process::Command;
-use std::process::Stdio;
-use std::string::String;
-use std::time::Instant;
 
-use anyhow::{Context, Result};
+use std::process::Command;
+use std::string::String;
+
+use anyhow::{Result};
 use human_bytes::human_bytes;
-use log::{error, info, warn};
+use log::{ info};
 use serde::{Deserialize, Serialize};
 
-use super::app;
+#[cfg(unix)]
+use {
+    std::fs::File,
+    std::io::IoSliceMut,
+    std::io::Write,
+    std::time::Instant,
+    std::io::{prelude::*, BufReader},
+    std::process::Stdio
+};
 
 // DarwinDiskList is deserialized from:
 // $ diskutil list -plist physical
@@ -246,7 +249,7 @@ pub fn list_removeable_disks_windows() -> Result<Vec<WindowsDisk>> {
     let cmd = Command::new("powershell.exe")
         .args(["GET-WMIOBJECT", "-query", "'SELECT * from win32_diskdrive WHERE MediaType!=null'", "|", "ConvertTo-Json"]).output()?;
     
-    let windows_disks: Vec<WindowsDisk> = serde_json::from_str(&String::from_utf8_lossy(&cmd.stdout).to_string())?;
+    let windows_disks: Vec<WindowsDisk> = serde_json::from_str(&String::from_utf8_lossy(&cmd.stdout))?;
     info!("Got disks {:?}", &windows_disks);
     Ok(windows_disks.iter().cloned().filter(|d| d.media_type == "Removable Media").collect())
 }

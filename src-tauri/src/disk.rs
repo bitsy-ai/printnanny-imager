@@ -1,17 +1,21 @@
 use std::io::{prelude::*, BufReader};
 use std::process::Command;
-use std::process::Stdio;
 use std::string::String;
 use std::time::Instant;
 use std::fs::File;
 use std::{io::BufWriter};
-use anyhow::{anyhow, Context, Result};
+use anyhow::{ Result};
 use std::path::Path;
-use human_bytes::human_bytes;
-use log::{error, info, warn, debug};
+use log::{error, info};
 use serde::{Deserialize, Serialize};
 
 use super::error::ImagerError;
+use super::app;
+
+#[cfg(unix)]
+use {
+    std::process::Stdio,
+};
 
 #[cfg(target_os = "windows")]
 use {
@@ -19,8 +23,6 @@ use {
     regex::Regex,
     std::os::windows::io::FromRawHandle
 };
-
-use super::app;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct WriteImageProgress {
@@ -105,7 +107,7 @@ pub fn partition_disk_windows(drivenum: &str)-> Result<()> {
     rescan
     ", drivenum);
     info!("Running diskpart script {}", &diskpart_script);
-    f.write_all(&diskpart_script.as_bytes())?;
+    f.write_all(diskpart_script.as_bytes())?;
 
     let child = Command::new("diskpart.exe")
         .args(
@@ -145,35 +147,6 @@ pub struct WindowsLogicalDisk {
     pub device_id: String,
 }
 
-// Reverse query for letter associated with logical disk partition
-// example device_id: "Disk #3, Partition #0"
-// ref: https://learn.microsoft.com/en-us/windows/win32/wmisdk/wmi-tasks--disks-and-file-systems
-#[cfg(target_os = "windows")]
-fn get_drive_letter_windows(device_id: &str) -> Result<String> {
-    // query associated data model
-    let query = format!("'ASSOCIATORS OF {{Win32_DiskDrive.DeviceID={device_id:?}}} WHERE AssocClass = Win32_DiskDriveToDiskPartition'", device_id=device_id);
-    let output = Command::new("powershell.exe")
-        .args(["GET-WMIOBJECT", "-query", &query, "|", "ConvertTo-Json"]).output()?;
-
-    let assoc_result_utf8 = String::from_utf8_lossy(&output.stdout).to_string();
-    debug!("Query {} output {:?}", &query, &assoc_result_utf8);
-
-    let drive_to_disk_partition: WindowsDriveToDiskPartition = serde_json::from_str(&assoc_result_utf8).context(format!("Failed to deserialize Win32_DiskDriveToDiskPartition output: {}", &assoc_result_utf8))?;
-
-    let query = format!("'ASSOCIATORS OF {{Win32_DiskPartition.DeviceId=\"{device_id}\"}} WHERE AssocClass = Win32_LogicalDiskToPartition'", device_id=drive_to_disk_partition.device_id);
-    let output = Command::new("powershell.exe")
-        .args(["GET-WMIOBJECT", "-query", &query, "|", "ConvertTo-Json"]).output()?;
-    
-    
-
-    let assoc_result_utf8 = String::from_utf8_lossy(&output.stdout).to_string();
-    debug!("Query {} output {:?}", &query, &assoc_result_utf8);
-
-    let logical_disk: WindowsLogicalDisk = serde_json::from_str(&assoc_result_utf8).context(format!("Failed to deserialize Win32_LogicalDiskToPartition output: {}", &assoc_result_utf8))?;
-    // WindowsLogicalDisk.device_id will be the mounted drive letter, e.g. "D:"
-    Ok(logical_disk.device_id)
-}
-
 #[cfg(target_os = "windows")]
 pub fn lock_volume(handle: Foundation::HANDLE, ) -> Result<(), ImagerError>{
     info!("Enabling FSCTL_ALLOW_EXTENDED_DASD_IO via DeviceIoControl API");
@@ -202,7 +175,7 @@ pub fn lock_volume(handle: Foundation::HANDLE, ) -> Result<(), ImagerError>{
                 break
             },
             false => {
-                attempts = attempts -1;
+                attempts -= 1;
                 let err = unsafe { Foundation::GetLastError() };
                 error!("Failed to lock volume with DeviceIOControl. {} attempts remaining. Err: {:?}", attempts, err);
             }
@@ -235,7 +208,7 @@ pub fn unlock_volume(handle: Foundation::HANDLE, ) -> Result<(), ImagerError>{
                 break
             },
             false => {
-                attempts = attempts -1;
+                attempts -= 1;
                 let err = unsafe { Foundation::GetLastError() };
                 error!("Failed to unlock volume with DeviceIOControl. {} attempts remaining. Err: {:?}", attempts, err);
             }
@@ -266,7 +239,7 @@ pub fn write_image(image_path: String, disk_path: String, device_id: String) -> 
         elapsed: 0_u64,
     };
     app::TauriApp::emit(app::EVENT_IMAGE_WRITE_PROGRESS, payload);
-    partition_disk_windows(&drivenum)?;
+    partition_disk_windows(drivenum)?;
     let payload = WriteImageProgress {
         bytes_written: 0_u64,
         bytes_total,
@@ -274,11 +247,6 @@ pub fn write_image(image_path: String, disk_path: String, device_id: String) -> 
         elapsed: 0_u64,
     };
     app::TauriApp::emit(app::EVENT_IMAGE_WRITE_PROGRESS, payload);
-
-    // Reverse query for letter associated with logical disk partition
-    // ref: https://learn.microsoft.com/en-us/windows/win32/wmisdk/wmi-tasks--disks-and-file-systems
-    // let drive_letter = get_drive_letter_windows(&device_id)?;
-    // let drive_path = format!("\\\\.\\{}", &drive_letter);
 
     let image_file = File::open(&image_path)?;
     let drive_path = Path::new(&disk_path);
