@@ -2,22 +2,21 @@
     all(not(debug_assertions), target_os = "windows"),
     windows_subsystem = "windows"
 )]
-
-use log::warn;
 use tauri_plugin_log::{LogTarget, LoggerBuilder};
 
 use printnanny_imager::app;
 use printnanny_imager::disk;
+use printnanny_imager::disklist;
 
 #[tauri::command]
 async fn list_diskdrive_crossplatform() -> String {
-    let disks = disk::list_disks().await.unwrap();
+    let disks = disklist::list_disks().await.unwrap();
     serde_json::to_string(&disks).unwrap()
 }
 
 #[tauri::command]
-async fn write_image(image_path: String, disk: String) -> () {
-    disk::write_image(image_path, disk).unwrap();
+async fn write_image(image_path: String, disk_path: String, device_id: String) {
+    disk::write_image(image_path, disk_path, device_id).unwrap();
 }
 
 fn main() {
@@ -31,7 +30,6 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             list_diskdrive_crossplatform,
             write_image
-        ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        ]).run(tauri::generate_context!())
+        .expect("error while running tauri application")
 }

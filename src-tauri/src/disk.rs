@@ -1,18 +1,28 @@
-use std::fs::File;
-use std::io::IoSliceMut;
-use std::io::Write;
 use std::io::{prelude::*, BufReader};
 use std::process::Command;
-use std::process::Stdio;
 use std::string::String;
 use std::time::Instant;
-
-use anyhow::{Context, Result};
-use human_bytes::human_bytes;
-use log::{error, info, warn};
+use std::fs::File;
+use std::{io::BufWriter};
+use anyhow::{ Result};
+use std::path::Path;
+use log::{error, info};
 use serde::{Deserialize, Serialize};
 
+use super::error::ImagerError;
 use super::app;
+
+#[cfg(unix)]
+use {
+    std::process::Stdio,
+};
+
+#[cfg(target_os = "windows")]
+use {
+    windows::{core::*, Win32::Storage::FileSystem, Win32::Foundation, Win32::System::IO, Win32::System::Ioctl},
+    regex::Regex,
+    std::os::windows::io::FromRawHandle
+};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct WriteImageProgress {
@@ -23,11 +33,6 @@ pub struct WriteImageProgress {
     pub label: String,
     // pub write_speed: String,
     // pub stdout_line: String,
-}
-
-#[cfg(target_os = "macos")]
-pub fn empty_darwin_disk_list() -> Vec<DarwinDisk> {
-    vec![]
 }
 
 #[cfg(target_os = "macos")]
@@ -84,17 +89,231 @@ pub fn unmount_disk_darwin(disk: &str, bytes_total: u64) -> Result<()> {
 }
 
 #[cfg(target_os = "linux")]
-pub fn write_image(image_path: String, disk: String) -> Result<()> {
+pub fn write_image(image_path: String, disk: String, device_id: String) -> Result<()> {
     unimplemented!("write_image is not implemented for target_os=linux")
 }
 
 #[cfg(target_os = "windows")]
-pub fn write_image(image_path: String, disk: String) -> Result<()> {
-    unimplemented!("write_image is not implemented for target_os=windows")
+pub fn partition_disk_windows(drivenum: &str)-> Result<()> {
+    // write diskpart script to temp_dir
+    // create partition primary
+    // select partition 1
+    // format fs=fat32 quick
+    // active
+    // assign
+    let mut f = tempfile::NamedTempFile::new()?;
+    let diskpart_script = format!("select disk {}
+    clean
+    rescan
+    ", drivenum);
+    info!("Running diskpart script {}", &diskpart_script);
+    f.write_all(diskpart_script.as_bytes())?;
+
+    let child = Command::new("diskpart.exe")
+        .args(
+            ["/s", &f.path().display().to_string()]
+        ).spawn()?;
+    info!("Running diskpart cmd {:?}", &child);
+    let output = child.wait_with_output()?;
+    match output.status.success() {
+        true => {
+            info!("Success! Cleaned {} - drive is now RAW and writeable with Windows direct access policies", &drivenum);
+            Ok(())
+        },
+        false => {
+            error!("Error running disk format {:?}",&output);
+            Err(ImagerError::FormatDisk)
+        }
+    }?;
+    Ok(())
+}
+
+// WindowsDriveToDiskPartition is serialized from:
+// GET-WMIOBJECT -query 'ASSOCIATORS OF {Win32_DiskDrive.DeviceID="<id>" } WHERE AssocClass = Win32_DiskDriveToDiskPartition' | ConvertTo-Json
+#[cfg(target_os = "windows")]
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct WindowsDriveToDiskPartition {
+    #[serde(rename(deserialize = "DeviceID"))]
+    pub device_id: String,
+}
+
+// WindowsLogicalDisk serialized from:
+// example device_id: "3"
+// GET-WMIOBJECT -query 'ASSOCIATORS OF {Win32_DiskPartition.DeviceID="<device_id>" } WHERE AssocClass = Win32_DiskDriveToDiskPartition' | ConvertTo-Json
+#[cfg(target_os = "windows")]
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct WindowsLogicalDisk {
+    #[serde(rename(deserialize = "DeviceID"))]
+    pub device_id: String,
+}
+
+#[cfg(target_os = "windows")]
+pub fn lock_volume(handle: Foundation::HANDLE, ) -> Result<(), ImagerError>{
+    info!("Enabling FSCTL_ALLOW_EXTENDED_DASD_IO via DeviceIoControl API");
+    unsafe { IO::DeviceIoControl(
+        handle, 
+        Ioctl::FSCTL_ALLOW_EXTENDED_DASD_IO,
+         None,
+        None,
+        None, 
+        None, ) };
+
+    let mut attempts = 20;
+    let mut success: bool = false;
+    while attempts > 0 {
+        let result = unsafe { IO::DeviceIoControl(
+            handle, 
+            Ioctl::FSCTL_LOCK_VOLUME,
+             None,
+            None,
+            None, 
+            None, ) };
+        match result.as_bool() {
+            true => { 
+                info!("Success! Locked volume with DeviceIoControl API");
+                success = true;
+                break
+            },
+            false => {
+                attempts -= 1;
+                let err = unsafe { Foundation::GetLastError() };
+                error!("Failed to lock volume with DeviceIOControl. {} attempts remaining. Err: {:?}", attempts, err);
+            }
+        }
+    }
+    // Publish error message to front-end if volume lock does not succeed
+    match success {
+        true => Ok(()),
+        false => Err(ImagerError::VolumeLock)
+    }
+}
+
+#[cfg(target_os = "windows")]
+pub fn unlock_volume(handle: Foundation::HANDLE, ) -> Result<(), ImagerError>{
+    info!("Calling FSCTL_UNLOCK_VOLUME via DeviceIoControl API");
+    let mut attempts = 20;
+    let mut success: bool = false;
+    while attempts > 0 {
+        let result = unsafe { IO::DeviceIoControl(
+            handle, 
+            Ioctl::FSCTL_UNLOCK_VOLUME,
+             None,
+            None,
+            None, 
+            None, ) };
+        match result.as_bool() {
+            true => { 
+                info!("Success! Unlocked volume with DeviceIoControl API");
+                success = true;
+                break
+            },
+            false => {
+                attempts -= 1;
+                let err = unsafe { Foundation::GetLastError() };
+                error!("Failed to unlock volume with DeviceIOControl. {} attempts remaining. Err: {:?}", attempts, err);
+            }
+        }
+    }
+    // Publish error message to front-end if volume lock does not succeed
+    match success {
+        true => Ok(()),
+        false => Err(ImagerError::VolumeLock)
+    }
+}
+
+#[cfg(target_os = "windows")]
+pub fn write_image(image_path: String, disk_path: String, device_id: String) -> Result<()> {
+    let re = Regex::new(r"PHYSICALDRIVE(\d+)")?;
+    let caps = re.captures(&disk_path).unwrap();
+    let drivenum = caps.get(1).unwrap().as_str();
+    info!("Attempting to reformat disk {}", &disk_path);
+
+
+    info!("write_image called with image_path={} disk_path={} device_id={}", &image_path, &disk_path, &device_id);
+    let image_file = File::open(&image_path)?;
+    let bytes_total = image_file.metadata()?.len();
+    let payload = WriteImageProgress {
+        bytes_written: 0_u64,
+        bytes_total,
+        label: "Formatting disk".to_string(),
+        elapsed: 0_u64,
+    };
+    app::TauriApp::emit(app::EVENT_IMAGE_WRITE_PROGRESS, payload);
+    partition_disk_windows(drivenum)?;
+    let payload = WriteImageProgress {
+        bytes_written: 0_u64,
+        bytes_total,
+        label: "Copying image to disk".to_string(),
+        elapsed: 0_u64,
+    };
+    app::TauriApp::emit(app::EVENT_IMAGE_WRITE_PROGRESS, payload);
+
+    let image_file = File::open(&image_path)?;
+    let drive_path = Path::new(&disk_path);
+    info!("Attempting to open drive_path: {:?}", &drive_path.display());
+    let lpfilename = PCSTR(drive_path.display().to_string().as_ptr());
+    // get a file handle for physical disk
+    info!("Attempting to open physical disk with CreateFileA API");
+    let disk_handle  = unsafe { FileSystem::CreateFileA(
+        lpfilename,
+        // FILE_ACCESS_FLAGS
+        FileSystem::FILE_GENERIC_READ | FileSystem::FILE_GENERIC_WRITE,
+        // FILE_SHARE_MODE
+        FileSystem::FILE_SHARE_READ,
+        // SECURITY ATTRIBUTES
+        None,
+        // FILE_CREATION_DISPOSITION
+        FileSystem::OPEN_EXISTING,
+        FileSystem::FILE_ATTRIBUTE_NORMAL | FileSystem::FILE_FLAG_SEQUENTIAL_SCAN,
+        None
+    )? };
+    info!("Success! Acquired a handle with CreateFileA API");
+
+    // lock the volume
+    lock_volume(disk_handle)?;
+
+    // attempt to open the physical disk using a raw handle
+    let outf = unsafe { File::from_raw_handle(disk_handle.0 as _) };
+
+    // 32 MB
+    let capacity = 16777216;
+    let mut bytes_written = 0_u64;
+    let mut image_reader = BufReader::with_capacity(capacity, image_file);
+    let mut image_writer = BufWriter::with_capacity(capacity, outf);
+    let now = Instant::now();
+    let mut last_update = now.elapsed().as_secs();
+    let update_interval = 1_u64;
+
+    info!("Writing image {} to {}", &image_path, &disk_path);
+    loop {
+        let buf = image_reader.fill_buf()?;
+        if buf.is_empty() {
+            break;
+        }
+        image_writer.write_all(buf)?;
+        let length = buf.len();
+        bytes_written += length as u64;
+        let elapsed = now.elapsed().as_secs();
+        image_reader.consume(length);
+        if elapsed - last_update > update_interval {
+            let payload = WriteImageProgress {
+                bytes_written,
+                bytes_total,
+                label: "Writing...".to_string(),
+                elapsed,
+            };
+            app::TauriApp::emit(app::EVENT_IMAGE_WRITE_PROGRESS, payload);
+        }
+        last_update = elapsed;
+    }
+    info!("Finished writing {} to {}", &image_path, &disk_path);
+    // unlock the volume
+    unlock_volume(disk_handle)?;
+    Ok(())
 }
 
 #[cfg(target_os = "macos")]
-pub fn write_image(image_path: String, disk: String) -> Result<()> {
+pub fn write_image(image_path: String, disk: String, _deviceId: String) -> Result<()> {
     use nix::sys::socket;
     use std::{io::BufWriter, os::unix::io::FromRawFd, os::unix::prelude::RawFd};
 
@@ -197,205 +416,6 @@ pub fn write_image(image_path: String, disk: String) -> Result<()> {
     Ok(())
 }
 
-// DarwinDisk is deserialized from:
-// $ diskutil info -plist <disk> | plutil -convert json -r -o - -
-#[cfg(target_os = "macos")]
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct DarwinDisk {
-    #[serde(rename(deserialize = "Bootable"))]
-    pub bootable: bool,
-    #[serde(rename(deserialize = "BusProtocol"))]
-    pub bus_protocol: String,
-    #[serde(rename(deserialize = "IORegistryEntryName"))]
-    pub display_name: String,
-    #[serde(rename(deserialize = "DeviceIdentifier"))]
-    pub device_id: String,
-    #[serde(rename(deserialize = "DeviceNode"))]
-    pub path: String,
-    #[serde(rename(deserialize = "Size"))]
-    pub size: u64,
-    #[serde(rename(deserialize = "Removable"))]
-    pub is_removable: bool,
-    #[serde(rename(deserialize = "ParentWholeDisk"))]
-    pub parent_whole_disk: String,
-    #[serde(default = "empty_darwin_disk_list")]
-    pub partitions: Vec<Self>,
-    #[serde(rename(deserialize = "VolumeName"))]
-    pub volume_name: String,
-}
-#[cfg(target_os = "macos")]
-impl DarwinDisk {
-    pub fn is_whole_disk(&self) -> bool {
-        self.parent_whole_disk == self.device_id
-    }
-    pub fn is_partition(&self) -> bool {
-        self.parent_whole_disk != self.device_id
-    }
-}
-
-// DarwinDiskList is deserialized from:
-// $ diskutil list -plist physical
-#[cfg(target_os = "macos")]
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct DarwinDiskList {
-    #[serde(rename(deserialize = "AllDisks"))]
-    pub all_disks: Vec<String>,
-}
-
-#[cfg(target_os = "macos")]
-pub fn merge_darwin_disks(disks: Vec<DarwinDisk>) -> Vec<DarwinDisk> {
-    // seek "parent" whole disk nodes
-    let whole_disks = disks.iter().cloned().filter(|d| d.is_whole_disk());
-
-    // seek partition disk nodes
-    let partitions: Vec<DarwinDisk> = disks.iter().cloned().filter(|d| d.is_partition()).collect();
-
-    // assign partitions to parent disk
-    whole_disks
-        .map(|mut d| {
-            d.partitions = partitions
-                .iter()
-                .filter(|p| p.parent_whole_disk == d.device_id)
-                .cloned()
-                .collect();
-            d
-        })
-        .collect()
-}
-
-#[cfg(target_os = "macos")]
-pub async fn list_removeable_disks_darwin() -> Result<Vec<DarwinDisk>> {
-    // get a list of physical disks
-    // equivalent to:
-    // $ diskutil list -plist physical | plutil -convert json -r -o - -
-    let disks_list_plist_child = Command::new("diskutil")
-        .args(["list", "-plist", "physical"])
-        .stdout(Stdio::piped())
-        .output()
-        .context("Command failed: diskutil list -plist physical")?;
-    // convert plist to json
-    // let disks_list_plist_stdio = String::from_utf8(disks_list_plist_child.stdout)?;
-    let mut disks_list_json_child = Command::new("plutil")
-        .args(["-convert", "json", "-r", "-o", "-", "-"])
-        .stdin(Stdio::piped()) // Pipe through.
-        .stdout(Stdio::piped())
-        .spawn()
-        .context("Command failed: plutil -convert json -r -o - -")?;
-    // write to plutil stdin
-    let mut plutil_stdin = disks_list_json_child
-        .stdin
-        .take()
-        .expect("Failed to open stdin");
-    std::thread::spawn(move || {
-        plutil_stdin
-            .write_all(&disks_list_plist_child.stdout)
-            .expect("Failed to write to plutil stdin");
-    });
-
-    // parse json
-    let disks_list_json = disks_list_json_child.wait_with_output()?;
-    let disks_list: DarwinDiskList = serde_json::from_slice(&disks_list_json.stdout)?;
-
-    // for each disk, get detailed info. Equivalent to:
-    // $ diskutil info -plist <disk> | plutil -convert json -r -o - -
-    let mut result: Vec<DarwinDisk> = vec![];
-    for disk in disks_list.all_disks.iter() {
-        // get detailed information about <disk>
-        let disks_info_plist_child = Command::new("diskutil")
-            .args(["info", "-plist", disk])
-            .stdout(Stdio::piped())
-            .output()
-            .context(format!("Command failed: diskutil info -plist {}", disk))?;
-
-        // convert plist to json
-        let mut disks_info_json_child = Command::new("plutil")
-            .args(["-convert", "json", "-r", "-o", "-", "-"])
-            .stdin(Stdio::piped()) // Pipe through.
-            .stdout(Stdio::piped())
-            .spawn()
-            .context("Command failed: plutil -convert json -r -o - -")?;
-        // write to plutil stdin
-        let mut plutil_stdin = disks_info_json_child
-            .stdin
-            .take()
-            .expect("Failed to open stdin");
-        std::thread::spawn(move || {
-            plutil_stdin
-                .write_all(&disks_info_plist_child.stdout)
-                .expect("Failed to write to plutil stdin");
-        });
-
-        // parse json
-        let disks_info_json = disks_info_json_child.wait_with_output()?;
-        let darwin_disk: DarwinDisk = serde_json::from_slice(&disks_info_json.stdout)?;
-        if darwin_disk.is_removable {
-            info!("Detected removeable drive {:?}", &disks_info_json);
-            result.push(darwin_disk);
-        } else {
-            warn!("Skipping non-removeable disk {}", disk);
-        }
-    }
-    result = merge_darwin_disks(result);
-    Ok(result)
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct CrossPlatformDisk {
-    pub bootable: bool,
-    #[serde(rename(serialize = "busProtocol"))]
-    pub bus_protocol: String,
-    #[serde(rename(serialize = "displayName"))]
-    pub display_name: String,
-    #[serde(rename(serialize = "deviceId"))]
-    pub device_id: String,
-    pub path: String,
-    pub size: u64,
-    #[serde(rename(serialize = "sizePretty"))]
-    pub size_pretty: String,
-    #[serde(rename(serialize = "isRemoveable"))]
-    pub is_removable: bool,
-    pub partitions: Vec<Self>,
-    #[serde(rename(serialize = "volumeName"))]
-    pub volume_name: String,
-}
-
-#[cfg(target_os = "macos")]
-impl From<&DarwinDisk> for CrossPlatformDisk {
-    fn from(disk: &DarwinDisk) -> Self {
-        Self {
-            bootable: disk.bootable,
-            bus_protocol: disk.bus_protocol.clone(),
-            display_name: disk.display_name.clone(),
-            device_id: disk.device_id.clone(),
-            path: disk.path.clone(),
-            size: disk.size,
-            size_pretty: human_bytes(disk.size as f64),
-            is_removable: disk.is_removable,
-            volume_name: disk.volume_name.clone(),
-            partitions: disk.partitions.iter().map(Self::from).collect(),
-        }
-    }
-}
-
-#[cfg(target_os = "macos")]
-pub async fn list_disks() -> Result<Vec<CrossPlatformDisk>> {
-    let result = list_removeable_disks_darwin()
-        .await?
-        .iter()
-        .map(CrossPlatformDisk::from)
-        .collect();
-    return Ok(result);
-}
-
-#[cfg(target_os = "linux")]
-pub async fn list_disks() -> Result<Vec<CrossPlatformDisk>> {
-    unimplemented!("list_disks is not implemented for target_os=linux")
-}
-
-#[cfg(target_os = "windows")]
-pub async fn list_disks() -> Result<Vec<CrossPlatformDisk>> {
-    unimplemented!("list_disks is not implemented for target_os=windows")
-}
 
 // #[cfg(test)]
 // mod tests {
