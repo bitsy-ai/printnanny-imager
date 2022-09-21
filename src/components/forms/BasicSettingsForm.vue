@@ -176,8 +176,8 @@
                 >
                 <div class="mt-1">
                   <textarea
-                    id="about"
-                    name="about"
+                    id="sshAuthorizedKeys"
+                    name="sshAuthorizedKeys"
                     rows="6"
                     class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                   />
@@ -375,255 +375,6 @@
               </div>
             </div>
           </div>
-
-          <div class="pt-8">
-            <div>
-              <h3 class="text-lg font-medium leading-6 text-gray-900">
-                Privacy & Video Data Streaming
-              </h3>
-              <p class="mt-1 text-sm text-gray-500">
-                Configure privacy preferences. You can change these settings at
-                any time in
-                <a
-                  href="https://printnanny.ai/devices"
-                  class="text-indigo-500 hover:text-indigo-600"
-                  >PrintNanny's Dashboard</a
-                >. To learn more about the type of data collected,<a
-                  href="https://printnanny.ai/privacy/"
-                  class="text-indigo-500 hover:text-indigo-600 text-sm mt-2"
-                  target="_blank"
-                >
-                  view the to Privacy Policy</a
-                >.
-              </p>
-            </div>
-            <div class="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
-              <div class="sm:col-span-6">
-                <p>Camera/Video Streaming Services</p>
-                <div class="relative flex items-start mt-5 mb-5">
-                  <div class="flex h-5 items-center">
-                    <Field
-                      id="enableRemoteVideo"
-                      type="checkbox"
-                      name="enableRemoteVideo"
-                      :standalone="true"
-                      :value="false"
-                      class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                    />
-                  </div>
-                  <div class="ml-3 text-sm">
-                    <label
-                      for="enableRemoteVideo"
-                      class="font-medium text-sm text-gray-500"
-                      ><strong>Enable Remote Camera</strong></label
-                    >
-                    <p class="text-gray-500">
-                      Forward camera stream to PrintNanny's cloud streaming
-                      service. Enable this option to view camera from anywhere.
-                    </p>
-                    <p class="text-gray-500">
-                      <strong>Requires PrintNanny Cloud subscription.</strong>
-                    </p>
-                  </div>
-                </div>
-                <div class="relative flex items-start mt-5 mb-5">
-                  <div class="flex h-5 items-center">
-                    <Field
-                      id="enableTelemetry"
-                      type="checkbox"
-                      name="enableTelemetry"
-                      :standalone="true"
-                      :value="false"
-                      class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                    />
-                  </div>
-                  <div class="ml-3 text-sm">
-                    <label
-                      for="enableTelemetry"
-                      class="font-medium text-sm text-gray-500"
-                      ><strong>Improve PrintNanny using my data</strong></label
-                    >
-                    <p class="text-gray-500">
-                      Allow PrintNanny to use anonymous camera/printer data to
-                      improve the failure detection system.
-                    </p>
-                  </div>
-                </div>
-                <div class="relative flex items-start mt-1">
-                  <a
-                    href="https://printnanny.ai/privacy/"
-                    class="text-indigo-500 hover:text-indigo-600 text-sm mt-2"
-                    target="_blank"
-                    >View the Privacy Policy.</a
-                  >
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="pt-8">
-          <div>
-            <h3 class="text-lg font-medium leading-6 text-gray-900">
-              Wireless LAN
-            </h3>
-            <p class="mt-1 text-sm text-gray-500">
-              Configure wifi network information. Your network password is never
-              shared with PrintNanny.
-            </p>
-          </div>
-          <div class="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
-            <div class="sm:col-span-3">
-              <div class="mt-1">
-                <div class="sm:col-span-3">
-                  <label
-                    for="wifiSSID"
-                    class="block text-sm font-medium text-gray-700"
-                    >Network SSID</label
-                  >
-                  <div class="mt-1">
-                    <Field
-                      id="wifiSSID"
-                      type="text"
-                      name="wifiSSID"
-                      class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                    />
-                  </div>
-                  <div class="relative flex items-start mt-1">
-                    <div class="flex h-5 items-center">
-                      <Field
-                        id="wifiSSIDHidden"
-                        type="checkbox"
-                        name="wifiSSIDHidden"
-                        :standalone="true"
-                        :value="false"
-                        class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                      />
-                    </div>
-                    <div class="ml-3 text-sm">
-                      <label
-                        for="wifiSSIDHidden"
-                        class="font-medium text-sm text-gray-500"
-                        >SSID is hidden (does not broadcast)</label
-                      >
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="sm:col-span-3">
-              <div class="mt-1">
-                <div class="sm:col-span-3">
-                  <label
-                    for="wifiPassword"
-                    class="block text-sm font-medium text-gray-700"
-                    >Network Password</label
-                  >
-                  <div class="mt-1">
-                    <Field
-                      id="wifiPassword"
-                      :type="wifiPasswordFieldType"
-                      name="wifiPassword"
-                      class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                    />
-                  </div>
-                  <div class="relative flex items-start mt-1">
-                    <div class="flex h-5 items-center">
-                      <Field
-                        id="showWifiPassword"
-                        v-slot="{ field }"
-                        type="checkbox"
-                        name="showWifiPassword"
-                        :standalone="true"
-                        :value="false"
-                      >
-                        <input
-                          type="checkbox"
-                          name="showWifiPassword"
-                          v-bind="field"
-                          :value="false"
-                          class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                          @change="() => onWifiPasswordShow(field.checked)"
-                        />
-                      </Field>
-                    </div>
-                    <div class="ml-3 text-sm">
-                      <label
-                        for="showWifiPassword"
-                        class="font-medium text-sm text-gray-500"
-                        >Show wifi password</label
-                      >
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="pt-8">
-          <div>
-            <h3 class="text-lg font-medium leading-6 text-gray-900">
-              Locale Settings
-            </h3>
-            <p class="mt-1 text-sm text-gray-500">
-              Configure keyboard layout and timezone.
-            </p>
-          </div>
-          <div class="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
-            <div class="sm:col-span-3">
-              <label
-                for="timezone"
-                class="block text-sm font-medium text-gray-700"
-                >Set timezone</label
-              >
-              <div class="mt-1">
-                <Field
-                  id="timezone"
-                  v-slot="{ value }"
-                  name="timezone"
-                  as="select"
-                  class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                >
-                  <option value="" disabled>Select timezone</option>
-                  <option
-                    v-for="timezone in timezoneList"
-                    :key="timezone"
-                    value="timezone"
-                    :selected="value && value.includes(timezone)"
-                  >
-                    {{ timezone }}
-                  </option>
-                </Field>
-              </div>
-            </div>
-            <div class="sm:col-span-3">
-              <label
-                for="keyboardLayout"
-                class="block text-sm font-medium text-gray-700"
-                >Set keyboard layout</label
-              >
-              <div class="mt-1">
-                <Field
-                  id="keyboardLayout"
-                  v-slot="{ value }"
-                  name="keyboardLayout"
-                  as="select"
-                  class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                >
-                  <option value="" disabled>Select keyboard layout</option>
-                  <option
-                    v-for="item in keyboardLayoutList"
-                    :key="item"
-                    value="timezone"
-                    :selected="value && value.includes(iteme)"
-                  >
-                    {{ item }}
-                  </option>
-                </Field>
-              </div>
-            </div>
-          </div>
         </div>
 
         <div class="pt-8">
@@ -643,7 +394,7 @@
                 class="text-indigo-500 hover:text-indigo-600 text-sm mt-2"
                 target="_blank"
               >
-                view the to Privacy Policy</a
+                view the Privacy Policy</a
               >.
             </p>
           </div>
@@ -694,18 +445,10 @@
                     ><strong>Improve PrintNanny using my data</strong></label
                   >
                   <p class="text-gray-500">
-                    Allow PrintNanny to use anonymous camera/printer data to
-                    improve the failure detection system.
+                    Allow PrintNanny to use anonymous telemetry data to improve
+                    the system.
                   </p>
                 </div>
-              </div>
-              <div class="relative flex items-start mt-1">
-                <a
-                  href="https://printnanny.ai/privacy/"
-                  class="text-indigo-500 hover:text-indigo-600 text-sm mt-2"
-                  target="_blank"
-                  >View the Privacy Policy.</a
-                >
               </div>
             </div>
           </div>
@@ -716,8 +459,8 @@
         <div class="flex justify-end">
           <button
             type="button"
+            class="ml-3 inline-flex justify-center rounded-md border border-transparent bg-red-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
             @click="onCancel"
-            class="rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
           >
             Cancel
           </button>
@@ -756,7 +499,7 @@ const props = defineProps({
   onCancel: {
     type: Function,
     default: (_payload: MouseEvent) => {},
-  }
+  },
 });
 
 const wifiPasswordFieldType = ref("password");
@@ -782,7 +525,6 @@ store.$patch({ edition: props.edition });
 
 // define a validation schema
 const schema = yup.object({
-  email: yup.string().required().email(),
   hostname: yup
     .string()
     .required()
@@ -790,7 +532,6 @@ const schema = yup.object({
     .default(`printnanny-${props.edition}`),
   enableSSH: yup.bool().default(true),
   saveSettings: yup.bool().default(false),
-  enableBasicAuth: yup.bool().default(true),
   username: yup
     .string()
     .required()
@@ -822,10 +563,8 @@ function resetSettings() {
   store.$reset();
   resetForm({
     values: {
-      email: undefined,
       enableSSH: true,
       saveSettings: false,
-      enableBasicAuth: true,
       username: undefined,
       password: undefined,
       disableSSHPassword: false,

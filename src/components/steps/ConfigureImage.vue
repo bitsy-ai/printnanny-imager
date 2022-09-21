@@ -76,7 +76,7 @@
                     </div>
                   </div>
                   <!-- basic settings form -->
-                  <basic-settings-form :on-cancel="onCancel"/>
+                  <basic-settings-form :on-cancel="onCancel" />
                 </div>
               </DialogPanel>
             </TransitionChild>
@@ -108,8 +108,8 @@ const formOpen = ref(false);
 const key = "configure-image";
 const active = computed(() => router.currentRoute.value.name == key);
 
-function onCancel(){
-    formOpen.value = false;
+function onCancel() {
+  formOpen.value = false;
 }
 
 function onClick() {

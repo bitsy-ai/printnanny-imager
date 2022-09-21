@@ -1,0 +1,33 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`CloudInitGenerator should generate user-data 1`] = `
+"#cloud-config
+hostname: pn-test
+manage_etc_hosts: true
+users:
+  - default
+  - name: testuser
+    groups:
+      - adm
+      - audio
+      - cdrom
+      - games
+      - gpio
+      - i2c
+      - input
+      - netdev
+      - plugdev
+      - render
+      - spi
+      - sudo
+      - users
+      - video
+    lock_passwd: false
+    passwd: testing1234
+    shell: /bin/bash
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    ssh_authorized_keys: []
+timezone: America/Los_Angeles
+
+"
+`;
