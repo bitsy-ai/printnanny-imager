@@ -8,7 +8,7 @@
   },
   "package": {
     "productName": "PrintNanny Imager",
-    "version": "0.1.0"
+    "version": "0.1.0",
   },
   "tauri": {
     "allowlist": {
@@ -72,7 +72,7 @@
     "bundle": {
       "active": true,
       "category": "DeveloperTool",
-      "copyright": "",
+      "copyright": "Bitsy AI Labs LLC, All Rights Reserved",
       "deb": {
         "depends": []
       },
@@ -88,7 +88,8 @@
       "longDescription": "",
       "macOS": {
         "entitlements": null,
-        "exceptionDomain": "",
+        "exceptionDomain": "printnanny.ai",
+        "license": "LICENSE.txt",
         "frameworks": [],
         "providerShortName": null,
         "signingIdentity": null
