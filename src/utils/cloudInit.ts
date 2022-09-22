@@ -1,5 +1,5 @@
-import * as YAML from "yaml";
-import bcrypt from "bcrypt";
+import { stringify } from 'yaml'
+import { invoke } from "@tauri-apps/api/tauri";
 
 interface CloudInitForm {
   disableSSHPassword: boolean;
@@ -54,12 +54,25 @@ class CloudInitGenerator implements CloudInitForm {
     this.wifiSSIDHidden = args.wifiSSIDHidden;
   }
 
-  static comparePassword(password: string, hash: string): boolean {
-    return bcrypt.compareSync(password, hash);
+  static encryptSensitive(args: CloudInitForm): CloudInitForm {
+    const sensitiveFields = ["password", "wifiPassword"];
+    // perform a deep copy
+    const result = JSON.parse(JSON.stringify(args));
+    sensitiveFields.forEach((field) => {
+      result[field] = CloudInitGenerator.hashPassword(result[field]);
+    });
+    return result;
   }
 
-  static hashPassword(password: string, saltRounds = 4096): string {
-    return bcrypt.hashSync(password, saltRounds);
+  static async comparePassword(
+    password: string,
+    hash: string
+  ): Promise<boolean> {
+    return await invoke("compare_password", { password, hash });
+  }
+
+  static async hashPassword(password: string): Promise<string> {
+    return await invoke("hash_password", { password });
   }
 
   static defaultGroups(): string[] {
@@ -136,7 +149,7 @@ class CloudInitGenerator implements CloudInitForm {
       timezone: this.timezone,
     };
     // convert to yaml
-    const yamlData = YAML.stringify(jsonData);
+    const yamlData = stringify(jsonData);
     // add #cloud-config to first line of generated yaml
     return `#cloud-config
 ${yamlData}
@@ -154,7 +167,7 @@ ${yamlData}
         "access-points": { [this.wifiSSID]: { password: this.wifiPassword } },
       },
     };
-    const yamlData = YAML.stringify(jsonData);
+    const yamlData = stringify(jsonData);
     return yamlData;
   }
 }

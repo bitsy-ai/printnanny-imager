@@ -89,7 +89,6 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
-import { open } from "@tauri-apps/api/dialog";
 import { useStore } from "@/store";
 import {
   Dialog,
@@ -114,9 +113,5 @@ function onCancel() {
 
 function onClick() {
   formOpen.value = true;
-}
-function clearSelection() {
-  store.$patch({ selectedImageFile: null, selectedDisk: null });
-  router.push({ name: "select-image" });
 }
 </script>

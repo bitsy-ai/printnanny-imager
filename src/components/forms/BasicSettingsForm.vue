@@ -482,7 +482,8 @@ import countryList from "@/utils/country";
 import timezoneList from "@/utils/timezone";
 import keyboardLayoutList from "@/utils/keyboard";
 import { useSettingsStore } from "@/store/settings";
-import { Form, Field, ErrorMessage, configure, useForm } from "vee-validate";
+import { configure, useForm } from "vee-validate";
+import { CloudInitForm } from "@/utils/cloudInit";
 
 configure({
   validateOnBlur: true,
@@ -556,6 +557,7 @@ const { handleSubmit, resetForm } = useForm({
 });
 
 const onSubmit = handleSubmit((values: any) => {
+  const encryptedFormValues = store.saveForm(values as CloudInitForm);
   console.log("Form was submitted with values", values);
 });
 
