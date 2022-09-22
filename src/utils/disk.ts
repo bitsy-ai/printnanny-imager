@@ -10,7 +10,7 @@ import {
 } from "../types";
 import { useStore } from "@/store";
 import { useSettingsStore } from "@/store/settings";
-import { CloudInitForm, CloudInitGenerator } from "./cloudInit";
+import { CloudInitGenerator } from "./cloudInit";
 
 const store = useStore();
 const settingsStore = useSettingsStore();
@@ -49,38 +49,38 @@ async function writeImage(disk: CrossPlatformDisk, imagePath: string) {
 }
 
 // write /boot/user-data and /boot/network-config
-async function writeBootfiles(disk: CrossPlatformDisk){
+async function writeBootfiles(disk: CrossPlatformDisk) {
   const progress = new ImageWriteProgress({
     label: "Finalizing image...",
-    percent: 25
+    percent: 25,
   });
   store.$patch({ progress: progress });
-  if (settingsStore.savedFormValues){
+  if (settingsStore.savedFormValues) {
     const generator = new CloudInitGenerator(settingsStore.savedFormValues);
     await invoke("write_bootfile", {
       diskPath: disk.path,
       filename: CloudInitGenerator.userDataFilename(),
-      content: generator.generateUserData()
+      content: generator.generateUserData(),
     });
     let progress = new ImageWriteProgress({
       label: "Finalizing image...",
-      percent: 75
+      percent: 75,
     });
     store.$patch({ progress: progress });
     await invoke("write_bootfile", {
       diskPath: disk.path,
       filename: CloudInitGenerator.networkDataFilename(),
-      content: generator.generateNetworkData()
+      content: generator.generateNetworkData(),
     });
     progress = new ImageWriteProgress({
       label: "Finalizing image...",
-      percent: 100
+      percent: 100,
     });
     store.$patch({ progress: progress });
   } else {
     const progress = new ImageWriteProgress({
       label: "Finalizing image...",
-      percent: 100
+      percent: 100,
     });
     store.$patch({ progress: progress });
   }

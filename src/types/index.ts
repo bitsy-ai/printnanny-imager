@@ -86,14 +86,17 @@ class ImageWriteProgress {
   }
 
   display_percent(): string {
-    if (this.percent !== undefined){
+    if (this.percent !== undefined) {
       return `${this.percent}%`;
-    } else if (this.bytes_total !== undefined && this.bytes_written !== undefined){
+    } else if (
+      this.bytes_total !== undefined &&
+      this.bytes_written !== undefined
+    ) {
       const perc = (this.bytes_written / this.bytes_total) * 100;
       console.log(perc);
       return `${Math.round(perc)}%`;
     }
-    return ''
+    return "";
   }
 }
 
