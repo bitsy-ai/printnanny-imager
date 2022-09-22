@@ -16,6 +16,8 @@ pub enum ImagerError {
     VolumeLock,
     #[error("Failed to format disk. Please eject the device, re-insert, and try again.")]
     FormatDisk,
+    #[error("Failed to open disk {path}. Please eject the device, re-insert, and try again.")]
+    OpenDisk { path: String },
     #[error(transparent)]
     Io {
         #[from]

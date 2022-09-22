@@ -218,6 +218,48 @@ pub fn unlock_volume(handle: Foundation::HANDLE) -> Result<(), ImagerError> {
 }
 
 #[cfg(target_os = "windows")]
+fn get_physical_drive_handle_windows(disk_path: &str) -> Result<Foundation::HANDLE, ImagerError> {
+    let drive_path = Path::new(&disk_path);
+    let lpfilename = PCSTR(drive_path.display().to_string().as_ptr());
+    info!("Attempting to open drive_path: {:?} with CreateFileA API", &drive_path.display());
+
+    let mut attempts = 20;
+
+    while attempts > 0 {
+        let result = unsafe {
+            FileSystem::CreateFileA(
+                lpfilename,
+                // FILE_ACCESS_FLAGS
+                FileSystem::FILE_GENERIC_READ | FileSystem::FILE_GENERIC_WRITE,
+                // FILE_SHARE_MODE
+                FileSystem::FILE_SHARE_READ,
+                // SECURITY ATTRIBUTES
+                None,
+                // FILE_CREATION_DISPOSITION
+                FileSystem::OPEN_EXISTING,
+                FileSystem::FILE_ATTRIBUTE_NORMAL | FileSystem::FILE_FLAG_SEQUENTIAL_SCAN,
+                None,
+            )
+        };
+        match result {
+            Ok(handle) => {
+                return Ok(handle)
+            },
+            Err(e) => {
+                attempts -= 1;
+                info!(
+                    "CreateFileA failed with error {:?} - {} attempts remaining",
+                    &e, attempts
+                );
+            }
+        }
+    }
+    Err(ImagerError::OpenDisk {
+        path: disk_path.to_string(),
+    })
+}
+
+#[cfg(target_os = "windows")]
 pub fn write_image(image_path: String, disk_path: String, device_id: String) -> Result<()> {
     let drivenum = &get_windows_drivenum(&disk_path);
     info!("Attempting to reformat disk {}", &disk_path);
@@ -245,27 +287,7 @@ pub fn write_image(image_path: String, disk_path: String, device_id: String) -> 
     app::TauriApp::emit(app::EVENT_IMAGE_WRITE_PROGRESS, payload);
 
     let image_file = File::open(&image_path)?;
-    let drive_path = Path::new(&disk_path);
-    info!("Attempting to open drive_path: {:?}", &drive_path.display());
-    let lpfilename = PCSTR(drive_path.display().to_string().as_ptr());
-    // get a file handle for physical disk
-    info!("Attempting to open physical disk with CreateFileA API");
-    let disk_handle = unsafe {
-        FileSystem::CreateFileA(
-            lpfilename,
-            // FILE_ACCESS_FLAGS
-            FileSystem::FILE_GENERIC_READ | FileSystem::FILE_GENERIC_WRITE,
-            // FILE_SHARE_MODE
-            FileSystem::FILE_SHARE_READ,
-            // SECURITY ATTRIBUTES
-            None,
-            // FILE_CREATION_DISPOSITION
-            FileSystem::OPEN_EXISTING,
-            FileSystem::FILE_ATTRIBUTE_NORMAL | FileSystem::FILE_FLAG_SEQUENTIAL_SCAN,
-            None,
-        )?
-    };
-    info!("Success! Acquired a handle with CreateFileA API");
+    let disk_handle = get_physical_drive_handle_windows(&disk_path)?;
 
     // lock the volume
     lock_volume(disk_handle)?;
