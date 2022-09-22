@@ -58,9 +58,11 @@ class CloudInitGenerator implements CloudInitForm {
     const sensitiveFields = ["password", "wifiPassword"];
     // perform a deep copy
     const result = JSON.parse(JSON.stringify(args));
-    await Promise.all(sensitiveFields.map(async (field) => {
-      result[field] = await CloudInitGenerator.hashPassword(result[field]);
-    }));
+    await Promise.all(
+      sensitiveFields.map(async (field) => {
+        result[field] = await CloudInitGenerator.hashPassword(result[field]);
+      })
+    );
     return result;
   }
 
