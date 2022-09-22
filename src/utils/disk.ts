@@ -12,9 +12,6 @@ import { useStore } from "@/store";
 import { useSettingsStore } from "@/store/settings";
 import { CloudInitGenerator } from "./cloudInit";
 
-const store = useStore();
-const settingsStore = useSettingsStore();
-
 async function listRemoveableDisks(): Promise<Array<CrossPlatformDisk>> {
   const output = await invoke("list_diskdrive_crossplatform");
   if (output) {
@@ -50,6 +47,9 @@ async function writeImage(disk: CrossPlatformDisk, imagePath: string) {
 
 // write /boot/user-data and /boot/network-config
 async function writeBootfiles(disk: CrossPlatformDisk) {
+  console.log("Writing bootfiles to disk", disk);
+  const store = useStore();
+  const settingsStore = useSettingsStore();
   const progress = new ImageWriteProgress({
     label: "Finalizing image...",
     percent: 25,
@@ -57,21 +57,25 @@ async function writeBootfiles(disk: CrossPlatformDisk) {
   store.$patch({ progress: progress });
   if (settingsStore.savedFormValues) {
     const generator = new CloudInitGenerator(settingsStore.savedFormValues);
+    let filename = CloudInitGenerator.userDataFilename();
     await invoke("write_bootfile", {
       diskPath: disk.path,
-      filename: CloudInitGenerator.userDataFilename(),
-      content: generator.generateUserData(),
+      filename: filename,
+      contents: generator.generateUserData(),
     });
+    console.log(`Success! Wrote ${filename}`);
     let progress = new ImageWriteProgress({
       label: "Finalizing image...",
       percent: 75,
     });
     store.$patch({ progress: progress });
+    filename = CloudInitGenerator.networkDataFilename();
     await invoke("write_bootfile", {
       diskPath: disk.path,
-      filename: CloudInitGenerator.networkDataFilename(),
-      content: generator.generateNetworkData(),
+      filename: filename,
+      contents: generator.generateNetworkData(),
     });
+    console.log(`Success! Wrote ${filename}`);
     progress = new ImageWriteProgress({
       label: "Finalizing image...",
       percent: 100,
