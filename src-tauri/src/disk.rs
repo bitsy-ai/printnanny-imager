@@ -21,6 +21,7 @@ use {
 #[cfg(target_os = "windows")]
 use {
     regex::Regex,
+    std::io::BufWriter,
     std::os::windows::io::FromRawHandle,
     std::path::Path,
     windows::{
