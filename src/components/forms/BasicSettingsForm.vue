@@ -28,17 +28,20 @@
           </div>
         </div>
         <div class="flex-1 align-self-end mt-3 ml-6">
-              <button
-                type="button"
-                class="rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                @click="resetSettings"
-              >
-                Reset Settings
-              </button>
+          <button
+            type="button"
+            class="rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            @click="resetSettings"
+          >
+            Reset Settings
+          </button>
         </div>
       </div>
       <div class="container m-auto">
-        <form class="space-y-8 divide-y divide-gray-200" @submit.prevent="onSubmit">
+        <form
+          class="space-y-8 divide-y divide-gray-200"
+          @submit.prevent="onSubmit"
+        >
           <div class="space-y-8 divide-y divide-gray-200">
             <div class="space-y-8 divide-y divide-gray-200">
               <div class="pt-8">
@@ -522,7 +525,9 @@ const props = defineProps({
   },
   onCancel: {
     type: Function,
-    default: (_payload: MouseEvent) => {},
+    default: (_payload: MouseEvent) => {
+      console.log("Closing form");
+    },
   },
 });
 

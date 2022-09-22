@@ -55,15 +55,16 @@ class CloudInitGenerator implements CloudInitForm {
   }
 
   static async encryptSensitive(args: CloudInitForm): Promise<CloudInitForm> {
-    const sensitiveFields = ["password", "wifiPassword"];
     // perform a deep copy
     const result = JSON.parse(JSON.stringify(args));
 
-    if (result.password !== undefined){
-        result.password = await CloudInitGenerator.hashPassword(result.password)
+    if (result.password !== undefined) {
+      result.password = await CloudInitGenerator.hashPassword(result.password);
     }
-    if (result.wifiPassword !== undefined){
-        result.wifiPassword = await CloudInitGenerator.hashPassword(result.wifiPassword)
+    if (result.wifiPassword !== undefined) {
+      result.wifiPassword = await CloudInitGenerator.hashPassword(
+        result.wifiPassword
+      );
     }
     return result;
   }

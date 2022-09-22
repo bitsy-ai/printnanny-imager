@@ -54,19 +54,10 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
-import { useStore } from "@/store";
-import {
-  Dialog,
-  DialogPanel,
-  DialogTitle,
-  TransitionChild,
-  TransitionRoot,
-} from "@headlessui/vue";
-import { Cog6ToothIcon } from "@heroicons/vue/24/outline";
+import { Dialog, TransitionChild, TransitionRoot } from "@headlessui/vue";
 import BasicSettingsForm from "@/components/forms/BasicSettingsForm.vue";
 
 const router = useRouter();
-const store = useStore();
 
 const formOpen = ref(false);
 const key = "configure-image";

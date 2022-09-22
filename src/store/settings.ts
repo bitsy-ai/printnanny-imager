@@ -10,7 +10,9 @@ export const useSettingsStore = defineStore({
   actions: {
     async saveForm(fieldset: CloudInitForm): CloudInitForm {
       // encrypt sensitive fields
-      const encryptedFieldset = await CloudInitGenerator.encryptSensitive(fieldset);
+      const encryptedFieldset = await CloudInitGenerator.encryptSensitive(
+        fieldset
+      );
       this.$patch({ savedFormValues: encryptedFieldset });
       return encryptedFieldset;
     },
