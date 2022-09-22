@@ -63,29 +63,37 @@ class CrossPlatformDisk implements CrossPlatformDiskInterface {
 }
 
 interface ImageWriteProgressInterface {
-  bytes_written: number;
-  bytes_total: number;
-  elapsed: number;
+  percent?: number;
+  bytes_written?: number;
+  bytes_total?: number;
+  elapsed?: number;
   label: string;
 }
 
 class ImageWriteProgress {
-  bytes_written: number;
-  bytes_total: number;
-  elapsed: number;
+  percent?: number;
+  bytes_written?: number;
+  bytes_total?: number;
+  elapsed?: number;
   label: string;
 
   constructor(args: ImageWriteProgressInterface) {
     this.bytes_total = args.bytes_total;
     this.bytes_written = args.bytes_written;
+    this.percent = args.percent;
     this.label = args.label;
     this.elapsed = args.elapsed;
   }
 
   display_percent(): string {
-    const perc = (this.bytes_written / this.bytes_total) * 100;
-    console.log(perc);
-    return `${Math.round(perc)}%`;
+    if (this.percent !== undefined){
+      return `${this.percent}%`;
+    } else if (this.bytes_total !== undefined && this.bytes_written !== undefined){
+      const perc = (this.bytes_written / this.bytes_total) * 100;
+      console.log(perc);
+      return `${Math.round(perc)}%`;
+    }
+    return ''
   }
 }
 
