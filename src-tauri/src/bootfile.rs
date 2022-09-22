@@ -45,7 +45,7 @@ fn get_boot_mountpoint(disk_path: &str) -> Result<DarwinMount, ImagerError> {
         let diskutil_json = diskutil_info_plist.wait_with_output()?;
         let mount: DarwinMount = serde_json::from_slice(&diskutil_json.stdout)?;
         if mount.mountpoint == "" {
-            attempts = -1;
+            attempts -= 1;
             info!(
                 "get_boot_mountpoint returned empty mountpoint {:?} - {} attempts remaining",
                 &mount, attempts
