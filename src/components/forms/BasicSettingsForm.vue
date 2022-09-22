@@ -137,7 +137,7 @@
                                 v-bind="field"
                                 :value="false"
                                 class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                                @change="() => onPasswordShow(field.checked)"
+                                @change="() => onPasswordShow(field?.checked)"
                               />
                             </Field>
                           </div>
@@ -356,8 +356,8 @@
                         <option
                           v-for="timezone in timezoneList"
                           :key="timezone"
-                          value="timezone"
-                          :selected="value && value.includes(timezone)"
+                          :value="timezone"
+                          :selected="value == timezone"
                         >
                           {{ timezone }}
                         </option>
@@ -384,8 +384,8 @@
                         <option
                           v-for="item in keyboardLayoutList"
                           :key="item"
-                          value="timezone"
-                          :selected="value && value.includes(item)"
+                          :value="item"
+                          :selected="value == item"
                         >
                           {{ item }}
                         </option>
@@ -478,11 +478,12 @@
           </div>
 
           <div class="pt-5">
+            <span v-if="Object.keys(errors).length > 0">{{ errors }}</span>
             <div class="flex justify-end">
               <button
                 type="button"
                 class="ml-3 inline-flex justify-center rounded-md border border-transparent bg-red-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                @click="onCancel"
+                @click="() => onCancel"
               >
                 Cancel
               </button>
@@ -533,7 +534,7 @@ const props = defineProps({
 
 const wifiPasswordFieldType = ref("password");
 
-function onWifiPasswordShow(value: boolean) {
+function onWifiPasswordShow(value: boolean | undefined) {
   if (value == true) {
     wifiPasswordFieldType.value = "text";
   } else {
@@ -542,7 +543,7 @@ function onWifiPasswordShow(value: boolean) {
 }
 
 const passwordFieldType = ref("password");
-function onPasswordShow(value: boolean) {
+function onPasswordShow(value: boolean | undefined) {
   if (value == true) {
     passwordFieldType.value = "text";
   } else {
@@ -550,7 +551,7 @@ function onPasswordShow(value: boolean) {
   }
 }
 
-store.$patch({ edition: props.edition });
+// store.$patch({ edition: props.edition });
 
 // define a validation schema
 const schema = yup.object({
@@ -579,7 +580,7 @@ const schema = yup.object({
   enableTelemetry: yup.bool(),
 });
 
-const { handleSubmit, resetForm } = useForm({
+const { handleSubmit, resetForm, errors } = useForm({
   validationSchema: schema,
   initialValues: store.savedFormValues || {},
 });
@@ -589,6 +590,7 @@ const onSubmit = handleSubmit(async (values: any) => {
 
   const encryptedFormValues = await store.saveForm(values as CloudInitForm);
   console.log("Encrypted values", encryptedFormValues);
+  props.onCancel();
 });
 
 function resetSettings() {
