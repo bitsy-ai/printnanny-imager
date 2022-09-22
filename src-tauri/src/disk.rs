@@ -219,16 +219,18 @@ pub fn unlock_volume(handle: Foundation::HANDLE) -> Result<(), ImagerError> {
 
 #[cfg(target_os = "windows")]
 fn get_physical_drive_handle_windows(disk_path: &str) -> Result<Foundation::HANDLE, ImagerError> {
-    let drive_path = Path::new(&disk_path);
-    let lpfilename = PCSTR(drive_path.display().to_string().as_ptr());
-    info!("Attempting to open drive_path: {:?} with CreateFileA API", &drive_path.display());
+    info!("Attempting to open drive_path: {:?} with CreateFileA API", disk_path);
+
+    let mut null_terminated_disk_path = disk_path.clone().to_string();
+    null_terminated_disk_path.push('\0');
 
     let mut attempts = 20;
 
     while attempts > 0 {
         let result = unsafe {
             FileSystem::CreateFileA(
-                lpfilename,
+                // lpfilename,
+                PCSTR(null_terminated_disk_path.as_ptr()),
                 // FILE_ACCESS_FLAGS
                 FileSystem::FILE_GENERIC_READ | FileSystem::FILE_GENERIC_WRITE,
                 // FILE_SHARE_MODE
@@ -305,26 +307,35 @@ pub fn write_image(image_path: String, disk_path: String, device_id: String) -> 
     let update_interval = 1_u64;
 
     info!("Writing image {} to {}", &image_path, &disk_path);
-    loop {
+    let mut attempts = 20;
+    while attempts > 0 {
         let buf = image_reader.fill_buf()?;
         if buf.is_empty() {
             break;
         }
-        image_writer.write_all(buf)?;
-        let length = buf.len();
-        bytes_written += length as u64;
-        let elapsed = now.elapsed().as_secs();
-        image_reader.consume(length);
-        if elapsed - last_update > update_interval {
-            let payload = WriteImageProgress {
-                bytes_written,
-                bytes_total,
-                label: "Writing...".to_string(),
-                elapsed,
-            };
-            app::TauriApp::emit(app::EVENT_IMAGE_WRITE_PROGRESS, payload);
+        match image_writer.write_all(buf) {
+            Ok(()) => {
+                let length = buf.len();
+                bytes_written += length as u64;
+                let elapsed = now.elapsed().as_secs();
+                image_reader.consume(length);
+                if elapsed - last_update > update_interval {
+                    let payload = WriteImageProgress {
+                        bytes_written,
+                        bytes_total,
+                        label: "Writing...".to_string(),
+                        elapsed,
+                    };
+                    app::TauriApp::emit(app::EVENT_IMAGE_WRITE_PROGRESS, payload);
+                }
+                last_update = elapsed;
+            },
+            Err(e) => {
+                attempts -= attempts;
+                error!("Error writing to raw device handle {} - attempts remaining: {}", e, &attempts)
+            }
         }
-        last_update = elapsed;
+
     }
     info!("Finished writing {} to {}", &image_path, &disk_path);
     // unlock the volume
