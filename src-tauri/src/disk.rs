@@ -136,25 +136,6 @@ pub fn partition_disk_windows(drivenum: &str) -> Result<()> {
     Ok(())
 }
 
-// WindowsDriveToDiskPartition is serialized from:
-// GET-WMIOBJECT -query 'ASSOCIATORS OF {Win32_DiskDrive.DeviceID="<id>" } WHERE AssocClass = Win32_DiskDriveToDiskPartition' | ConvertTo-Json
-#[cfg(target_os = "windows")]
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct WindowsDriveToDiskPartition {
-    #[serde(rename(deserialize = "DeviceID"))]
-    pub device_id: String,
-}
-
-// WindowsLogicalDisk serialized from:
-// example device_id: "3"
-// GET-WMIOBJECT -query 'ASSOCIATORS OF {Win32_DiskPartition.DeviceID="<device_id>" } WHERE AssocClass = Win32_DiskDriveToDiskPartition' | ConvertTo-Json
-#[cfg(target_os = "windows")]
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct WindowsLogicalDisk {
-    #[serde(rename(deserialize = "DeviceID"))]
-    pub device_id: String,
-}
-
 #[cfg(target_os = "windows")]
 pub fn lock_volume(handle: Foundation::HANDLE) -> Result<(), ImagerError> {
     info!("Enabling FSCTL_ALLOW_EXTENDED_DASD_IO via DeviceIoControl API");
@@ -198,6 +179,15 @@ pub fn lock_volume(handle: Foundation::HANDLE) -> Result<(), ImagerError> {
     }
 }
 
+// returns the number portition of a Windows DiskDrive name (physical drive)
+#[cfg(target_os = "windows")]
+pub fn get_windows_drivenum(disk_path: &str) -> String {
+    let re = Regex::new(r"PHYSICALDRIVE(\d+)").unwrap();
+    let caps = re.captures(&disk_path).unwrap();
+    let drivenum = caps.get(1).unwrap().as_str();
+    drivenum.to_string()
+}
+
 #[cfg(target_os = "windows")]
 pub fn unlock_volume(handle: Foundation::HANDLE) -> Result<(), ImagerError> {
     info!("Calling FSCTL_UNLOCK_VOLUME via DeviceIoControl API");
@@ -229,9 +219,7 @@ pub fn unlock_volume(handle: Foundation::HANDLE) -> Result<(), ImagerError> {
 
 #[cfg(target_os = "windows")]
 pub fn write_image(image_path: String, disk_path: String, device_id: String) -> Result<()> {
-    let re = Regex::new(r"PHYSICALDRIVE(\d+)")?;
-    let caps = re.captures(&disk_path).unwrap();
-    let drivenum = caps.get(1).unwrap().as_str();
+    let drivenum = &get_windows_drivenum(&disk_path);
     info!("Attempting to reformat disk {}", &disk_path);
 
     info!(
