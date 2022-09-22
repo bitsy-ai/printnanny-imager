@@ -29,6 +29,25 @@ describe("CloudInitGenerator", () => {
 
   test("should hash password", () => {
     const hashed = CloudInitGenerator.hashPassword(baseFormData.password);
-    expect(CloudInitGenerator.comparePassword(baseFormData.password, hashed)).toEqual(true);
+    expect(
+      CloudInitGenerator.comparePassword(baseFormData.password, hashed)
+    ).toEqual(true);
+  });
+
+  test("should generate network-data", () => {
+    const generator = new CloudInitGenerator(baseFormData);
+    const yamlData = generator.generateNetworkData();
+    expect(yamlData).toMatchSnapshot();
+  });
+
+  test("should generate meta-data", () => {
+    const generator = new CloudInitGenerator(baseFormData);
+    const yamlData = generator.generateMetaData();
+    expect(yamlData).toMatchSnapshot();
+  });
+  test("should generate vendor-data", () => {
+    const generator = new CloudInitGenerator(baseFormData);
+    const yamlData = generator.generateVendorData();
+    expect(yamlData).toMatchSnapshot();
   });
 });

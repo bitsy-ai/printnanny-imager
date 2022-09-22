@@ -1,5 +1,19 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`CloudInitGenerator should generate meta-data 1`] = `""`;
+
+exports[`CloudInitGenerator should generate network-data 1`] = `
+"version: 2
+renderer: networkd
+wlan0:
+  dhcp4: true
+  optional: true
+  access-points:
+    test-ssid:
+      password: testing3456
+"
+`;
+
 exports[`CloudInitGenerator should generate user-data 1`] = `
 "#cloud-config
 hostname: pn-test
@@ -31,3 +45,5 @@ timezone: America/Los_Angeles
 
 "
 `;
+
+exports[`CloudInitGenerator should generate vendor-data 1`] = `"#cloud-config"`;

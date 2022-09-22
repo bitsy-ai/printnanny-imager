@@ -1,4 +1,4 @@
-import * as YAML from 'yaml';
+import * as YAML from "yaml";
 import bcrypt from "bcrypt";
 
 interface CloudInitForm {
@@ -17,12 +17,6 @@ interface CloudInitForm {
   wifiSSID: string;
   wifiSSIDHidden: boolean;
   sshAuthorizedKeys?: string;
-}
-
-interface PasswordHashOptions {
-    algorithm: string;
-    saltLength: string;
-    iterations: number;
 }
 
 class CloudInitGenerator implements CloudInitForm {
@@ -68,7 +62,7 @@ class CloudInitGenerator implements CloudInitForm {
     return bcrypt.hashSync(password, saltRounds);
   }
 
-  static defaultGroups() {
+  static defaultGroups(): string[] {
     return [
       "adm",
       "audio",
@@ -87,8 +81,24 @@ class CloudInitGenerator implements CloudInitForm {
     ];
   }
 
-  static defaultShell() {
+  static defaultShell(): string {
     return "/bin/bash";
+  }
+
+  static networkDataFilename(): string {
+    return "network-config";
+  }
+
+  static metaDataFilename(): string {
+    return "meta-data";
+  }
+
+  static vendorDataFilename(): string {
+    return "vendor-data";
+  }
+
+  static userDataFilename(): string {
+    return "user-data";
   }
 
   generateUserBlock() {
@@ -98,24 +108,54 @@ class CloudInitGenerator implements CloudInitForm {
       lock_passwd: false,
       passwd: this.password, // password is already hashed before class is constructed
       shell: CloudInitGenerator.defaultShell(),
-      sudo: 'ALL=(ALL) NOPASSWD:ALL',
-      ssh_authorized_keys: [] as string[]
+      sudo: "ALL=(ALL) NOPASSWD:ALL",
+      ssh_authorized_keys: [] as string[],
     };
-    if (this.sshAuthorizedKeys !== undefined){
-        userBlock.ssh_authorized_keys=  this.sshAuthorizedKeys.split('\n');
+    if (this.sshAuthorizedKeys !== undefined) {
+      userBlock.ssh_authorized_keys = this.sshAuthorizedKeys.split("\n");
     }
-    return userBlock
+    return userBlock;
   }
 
-  generateUserData() {
+  // not used currently, but cloud-init expects /boot/vendor-data to be present
+  generateVendorData(): string {
+    return "#cloud-config";
+  }
+
+  // not used currently, but cloud-init expects /boot/meta-data to be present
+  generateMetaData(): string {
+    return "";
+  }
+  // generate /boot/user-data contents
+  generateUserData(): string {
     // create json data structure
-    const jsonData = { hostname: this.hostname, manage_etc_hosts: true, users: [ "default", this.generateUserBlock()], timezone: this.timezone };
+    const jsonData = {
+      hostname: this.hostname,
+      manage_etc_hosts: true,
+      users: ["default", this.generateUserBlock()],
+      timezone: this.timezone,
+    };
     // convert to yaml
     const yamlData = YAML.stringify(jsonData);
     // add #cloud-config to first line of generated yaml
     return `#cloud-config
 ${yamlData}
-`
+`;
+  }
+
+  // generate /boot/network-config contents
+  generateNetworkData(): string {
+    const jsonData = {
+      version: 2,
+      renderer: "networkd",
+      wlan0: {
+        dhcp4: true,
+        optional: true,
+        "access-points": { [this.wifiSSID]: { password: this.wifiPassword } },
+      },
+    };
+    const yamlData = YAML.stringify(jsonData);
+    return yamlData;
   }
 }
 
