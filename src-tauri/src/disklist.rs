@@ -1,21 +1,20 @@
-
 use std::process::Command;
 use std::string::String;
 
-use anyhow::{Result};
+use anyhow::Result;
 use human_bytes::human_bytes;
-use log::{ info};
+use log::info;
 use serde::{Deserialize, Serialize};
 
 #[cfg(unix)]
 use {
     anyhow::Context,
+    log::warn,
     std::fs::File,
-    std::io::IoSliceMut,
     std::io::Write,
-    std::time::Instant,
     std::io::{prelude::*, BufReader},
-    std::process::Stdio
+    std::process::Stdio,
+    std::time::Instant,
 };
 
 // DarwinDiskList is deserialized from:
@@ -90,8 +89,6 @@ pub struct WindowsDisk {
     pub size: u64,
 }
 
-
-
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct CrossPlatformDisk {
     pub bootable: bool,
@@ -143,7 +140,7 @@ impl From<&WindowsDisk> for CrossPlatformDisk {
             size_pretty: human_bytes(disk.size as f64),
             is_removable: disk.media_type == "Removable Media", // 7 -> "Supports Removable Media" capability
             volume_name: disk.volume_name.clone(),
-            partitions: vec![]
+            partitions: vec![],
         }
     }
 }
@@ -248,13 +245,24 @@ pub async fn list_removeable_disks_darwin() -> Result<Vec<DarwinDisk>> {
 #[cfg(target_os = "windows")]
 pub fn list_removeable_disks_windows() -> Result<Vec<WindowsDisk>> {
     let cmd = Command::new("powershell.exe")
-        .args(["GET-WMIOBJECT", "-query", "'SELECT * from win32_diskdrive WHERE MediaType!=null'", "|", "ConvertTo-Json"]).output()?;
-    
-    let windows_disks: Vec<WindowsDisk> = serde_json::from_str(&String::from_utf8_lossy(&cmd.stdout))?;
-    info!("Got disks {:?}", &windows_disks);
-    Ok(windows_disks.iter().cloned().filter(|d| d.media_type == "Removable Media").collect())
-}
+        .args([
+            "GET-WMIOBJECT",
+            "-query",
+            "'SELECT * from win32_diskdrive WHERE MediaType!=null'",
+            "|",
+            "ConvertTo-Json",
+        ])
+        .output()?;
 
+    let windows_disks: Vec<WindowsDisk> =
+        serde_json::from_str(&String::from_utf8_lossy(&cmd.stdout))?;
+    info!("Got disks {:?}", &windows_disks);
+    Ok(windows_disks
+        .iter()
+        .cloned()
+        .filter(|d| d.media_type == "Removable Media")
+        .collect())
+}
 
 #[cfg(target_os = "macos")]
 pub async fn list_disks() -> Result<Vec<CrossPlatformDisk>> {
@@ -277,4 +285,3 @@ pub async fn list_disks() -> Result<Vec<CrossPlatformDisk>> {
     let result = list_removeable_disks_windows()?;
     Ok(result.iter().map(CrossPlatformDisk::from).collect())
 }
-

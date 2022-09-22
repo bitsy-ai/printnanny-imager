@@ -1,0 +1,49 @@
+// Vitest Snapshot v1
+
+exports[`CloudInitGenerator > should generate meta-data 1`] = `""`;
+
+exports[`CloudInitGenerator > should generate network-data 1`] = `
+"version: 2
+renderer: networkd
+wlan0:
+  dhcp4: true
+  optional: true
+  access-points:
+    test-ssid:
+      password: testing3456
+"
+`;
+
+exports[`CloudInitGenerator > should generate user-data 1`] = `
+"#cloud-config
+hostname: pn-test
+manage_etc_hosts: true
+users:
+  - default
+  - name: testuser
+    groups:
+      - adm
+      - audio
+      - cdrom
+      - games
+      - gpio
+      - i2c
+      - input
+      - netdev
+      - plugdev
+      - render
+      - spi
+      - sudo
+      - users
+      - video
+    lock_passwd: false
+    passwd: testing1234
+    shell: /bin/bash
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    ssh_authorized_keys: []
+timezone: America/Los_Angeles
+
+"
+`;
+
+exports[`CloudInitGenerator > should generate vendor-data 1`] = `"#cloud-config"`;

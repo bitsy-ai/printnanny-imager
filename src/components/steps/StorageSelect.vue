@@ -1,5 +1,5 @@
 <template>
-  <div v-if="!active && store.selectedDisk == null" class="flex-1">
+  <div v-if="!active && store.selectedDisk == null" class="flex-1 h-20">
     <button
       disabled
       class="text-center block mx-4 my-4 h-12 w-48 block bg-indigo-400 text-white font-bold py-2 px-4 border-b-4 border-indigo-700 rounded disabled:opacity-50"

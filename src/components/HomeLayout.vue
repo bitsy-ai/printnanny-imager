@@ -1,23 +1,24 @@
 <template>
-  <div class="flex grid grid-rows-4 max-h-full">
+  <div class="flex grid grid-rows-3 max-h-screen">
     <div class="flex-1 row-span-1 bg-stone-50">
       <img
         src="@/assets/logo/logo-rect-light.svg"
-        class="w-1/2 m-auto pt-2 pb-2"
+        class="m-auto h-full pt-2 pb-2"
         alt="PrintNanny Logo"
       />
     </div>
 
-    <div class="row-span-3 bg-zinc-500">
+    <div class="row-span-2 bg-zinc-500">
+      <!-- imager buttons -->
       <div
-        class="grid grid-rows-3 items-center content-center justify-content-center"
+        class="grid grid-rows-3 bg-zinc-500 items-center content-center justify-content-center"
       >
         <nav aria-label="Progress">
           <ol role="list" class="flex items-center mt-6 justify-center">
             <li
               v-for="(step, stepIdx) in steps"
               :key="step.name"
-              :class="[stepIdx !== steps.length - 1 ? 'pr-72' : '', 'relative']"
+              :class="[stepIdx !== steps.length - 1 ? 'pr-64' : '', 'relative']"
             >
               <template v-if="step.status() === 'complete'">
                 <div
@@ -75,9 +76,10 @@
           </ol>
         </nav>
         <div
-          class="flex items-center mt-6 justify-items-center grid grid-cols-3"
+          class="flex items-center mt-6 justify-items-center grid grid-cols-4"
         >
           <router-view name="ChooseImage"></router-view>
+          <router-view name="ConfigureImage"></router-view>
           <router-view name="StorageSelect"></router-view>
           <router-view name="FlashImage"></router-view>
         </div>
@@ -92,11 +94,13 @@ import {
   FolderArrowDownIcon as FolderArrowDownIconOutline,
   ServerIcon as ServerIconOutline,
   BoltIcon as BoltIconOutline,
+  Cog6ToothIcon as CogToothOutline,
 } from "@heroicons/vue/24/outline";
 import {
   FolderArrowDownIcon as FolderArrowDownIconSolid,
   ServerIcon as ServerIconSolid,
   BoltIcon as BoltIconSolid,
+  Cog6ToothIcon as CogToothSolid,
 } from "@heroicons/vue/24/solid";
 import ProgressBar from "@/components/steps/ProgressBar.vue";
 
@@ -109,6 +113,25 @@ const steps = [
     status: () => {
       switch (router.currentRoute.value.name) {
         case "select-image":
+          return "current";
+        case "configure-image":
+          return "complete";
+        case "select-storage":
+          return "complete";
+        case "flash-image":
+          return "complete";
+      }
+    },
+  },
+  {
+    name: "Configue Image",
+    outlineIcon: CogToothOutline,
+    solidIcon: CogToothSolid,
+    status: () => {
+      switch (router.currentRoute.value.name) {
+        case "select-image":
+          return "upcoming";
+        case "configure-image":
           return "current";
         case "select-storage":
           return "complete";
@@ -125,6 +148,8 @@ const steps = [
       switch (router.currentRoute.value.name) {
         case "select-image":
           return "upcoming";
+        case "configure-image":
+          return "upcoming";
         case "select-storage":
           return "current";
         case "flash-image":
@@ -139,6 +164,8 @@ const steps = [
     status: () => {
       switch (router.currentRoute.value.name) {
         case "select-image":
+          return "upcoming";
+        case "configure-image":
           return "upcoming";
         case "select-storage":
           return "upcoming";

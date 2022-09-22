@@ -1,27 +1,33 @@
+use anyhow::Result;
+use log::{error, info};
+use serde::{Deserialize, Serialize};
+use std::fs::File;
 use std::io::{prelude::*, BufReader};
 use std::process::Command;
 use std::string::String;
 use std::time::Instant;
-use std::fs::File;
-use std::{io::BufWriter};
-use anyhow::{ Result};
-use std::path::Path;
-use log::{error, info};
-use serde::{Deserialize, Serialize};
 
-use super::error::ImagerError;
 use super::app;
+use super::error::ImagerError;
 
 #[cfg(unix)]
 use {
+    nix::sys::socket,
+    std::io::IoSliceMut,
     std::process::Stdio,
+    std::{io::BufWriter, os::unix::io::FromRawFd, os::unix::prelude::RawFd},
 };
 
 #[cfg(target_os = "windows")]
 use {
-    windows::{core::*, Win32::Storage::FileSystem, Win32::Foundation, Win32::System::IO, Win32::System::Ioctl},
     regex::Regex,
-    std::os::windows::io::FromRawHandle
+    std::io::BufWriter,
+    std::os::windows::io::FromRawHandle,
+    std::path::Path,
+    windows::{
+        core::*, Win32::Foundation, Win32::Storage::FileSystem, Win32::System::Ioctl,
+        Win32::System::IO,
+    },
 };
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
@@ -94,7 +100,7 @@ pub fn write_image(image_path: String, disk: String, device_id: String) -> Resul
 }
 
 #[cfg(target_os = "windows")]
-pub fn partition_disk_windows(drivenum: &str)-> Result<()> {
+pub fn partition_disk_windows(drivenum: &str) -> Result<()> {
     // write diskpart script to temp_dir
     // create partition primary
     // select partition 1
@@ -102,26 +108,28 @@ pub fn partition_disk_windows(drivenum: &str)-> Result<()> {
     // active
     // assign
     let mut f = tempfile::NamedTempFile::new()?;
-    let diskpart_script = format!("select disk {}
+    let diskpart_script = format!(
+        "select disk {}
     clean
     rescan
-    ", drivenum);
+    ",
+        drivenum
+    );
     info!("Running diskpart script {}", &diskpart_script);
     f.write_all(diskpart_script.as_bytes())?;
 
     let child = Command::new("diskpart.exe")
-        .args(
-            ["/s", &f.path().display().to_string()]
-        ).spawn()?;
+        .args(["/s", &f.path().display().to_string()])
+        .spawn()?;
     info!("Running diskpart cmd {:?}", &child);
     let output = child.wait_with_output()?;
     match output.status.success() {
         true => {
             info!("Success! Cleaned {} - drive is now RAW and writeable with Windows direct access policies", &drivenum);
             Ok(())
-        },
+        }
         false => {
-            error!("Error running disk format {:?}",&output);
+            error!("Error running disk format {:?}", &output);
             Err(ImagerError::FormatDisk)
         }
     }?;
@@ -148,65 +156,63 @@ pub struct WindowsLogicalDisk {
 }
 
 #[cfg(target_os = "windows")]
-pub fn lock_volume(handle: Foundation::HANDLE, ) -> Result<(), ImagerError>{
+pub fn lock_volume(handle: Foundation::HANDLE) -> Result<(), ImagerError> {
     info!("Enabling FSCTL_ALLOW_EXTENDED_DASD_IO via DeviceIoControl API");
-    unsafe { IO::DeviceIoControl(
-        handle, 
-        Ioctl::FSCTL_ALLOW_EXTENDED_DASD_IO,
-         None,
-        None,
-        None, 
-        None, ) };
+    unsafe {
+        IO::DeviceIoControl(
+            handle,
+            Ioctl::FSCTL_ALLOW_EXTENDED_DASD_IO,
+            None,
+            None,
+            None,
+            None,
+        )
+    };
 
     let mut attempts = 20;
     let mut success: bool = false;
     while attempts > 0 {
-        let result = unsafe { IO::DeviceIoControl(
-            handle, 
-            Ioctl::FSCTL_LOCK_VOLUME,
-             None,
-            None,
-            None, 
-            None, ) };
+        let result = unsafe {
+            IO::DeviceIoControl(handle, Ioctl::FSCTL_LOCK_VOLUME, None, None, None, None)
+        };
         match result.as_bool() {
-            true => { 
+            true => {
                 info!("Success! Locked volume with DeviceIoControl API");
                 success = true;
-                break
-            },
+                break;
+            }
             false => {
                 attempts -= 1;
                 let err = unsafe { Foundation::GetLastError() };
-                error!("Failed to lock volume with DeviceIOControl. {} attempts remaining. Err: {:?}", attempts, err);
+                error!(
+                    "Failed to lock volume with DeviceIOControl. {} attempts remaining. Err: {:?}",
+                    attempts, err
+                );
             }
         }
     }
     // Publish error message to front-end if volume lock does not succeed
     match success {
         true => Ok(()),
-        false => Err(ImagerError::VolumeLock)
+        false => Err(ImagerError::VolumeLock),
     }
 }
 
 #[cfg(target_os = "windows")]
-pub fn unlock_volume(handle: Foundation::HANDLE, ) -> Result<(), ImagerError>{
+pub fn unlock_volume(handle: Foundation::HANDLE) -> Result<(), ImagerError> {
     info!("Calling FSCTL_UNLOCK_VOLUME via DeviceIoControl API");
     let mut attempts = 20;
     let mut success: bool = false;
     while attempts > 0 {
-        let result = unsafe { IO::DeviceIoControl(
-            handle, 
-            Ioctl::FSCTL_UNLOCK_VOLUME,
-             None,
-            None,
-            None, 
-            None, ) };
+        let result = unsafe {
+            IO::DeviceIoControl(handle, Ioctl::FSCTL_UNLOCK_VOLUME, None, None, None, None)
+        };
         match result.as_bool() {
-            true => { 
+            true => {
                 info!("Success! Unlocked volume with DeviceIoControl API");
                 success = true;
-                break
-            },
+                break;
+            }
             false => {
                 attempts -= 1;
                 let err = unsafe { Foundation::GetLastError() };
@@ -217,7 +223,7 @@ pub fn unlock_volume(handle: Foundation::HANDLE, ) -> Result<(), ImagerError>{
     // Publish error message to front-end if volume lock does not succeed
     match success {
         true => Ok(()),
-        false => Err(ImagerError::VolumeLock)
+        false => Err(ImagerError::VolumeLock),
     }
 }
 
@@ -228,8 +234,10 @@ pub fn write_image(image_path: String, disk_path: String, device_id: String) -> 
     let drivenum = caps.get(1).unwrap().as_str();
     info!("Attempting to reformat disk {}", &disk_path);
 
-
-    info!("write_image called with image_path={} disk_path={} device_id={}", &image_path, &disk_path, &device_id);
+    info!(
+        "write_image called with image_path={} disk_path={} device_id={}",
+        &image_path, &disk_path, &device_id
+    );
     let image_file = File::open(&image_path)?;
     let bytes_total = image_file.metadata()?.len();
     let payload = WriteImageProgress {
@@ -254,19 +262,21 @@ pub fn write_image(image_path: String, disk_path: String, device_id: String) -> 
     let lpfilename = PCSTR(drive_path.display().to_string().as_ptr());
     // get a file handle for physical disk
     info!("Attempting to open physical disk with CreateFileA API");
-    let disk_handle  = unsafe { FileSystem::CreateFileA(
-        lpfilename,
-        // FILE_ACCESS_FLAGS
-        FileSystem::FILE_GENERIC_READ | FileSystem::FILE_GENERIC_WRITE,
-        // FILE_SHARE_MODE
-        FileSystem::FILE_SHARE_READ,
-        // SECURITY ATTRIBUTES
-        None,
-        // FILE_CREATION_DISPOSITION
-        FileSystem::OPEN_EXISTING,
-        FileSystem::FILE_ATTRIBUTE_NORMAL | FileSystem::FILE_FLAG_SEQUENTIAL_SCAN,
-        None
-    )? };
+    let disk_handle = unsafe {
+        FileSystem::CreateFileA(
+            lpfilename,
+            // FILE_ACCESS_FLAGS
+            FileSystem::FILE_GENERIC_READ | FileSystem::FILE_GENERIC_WRITE,
+            // FILE_SHARE_MODE
+            FileSystem::FILE_SHARE_READ,
+            // SECURITY ATTRIBUTES
+            None,
+            // FILE_CREATION_DISPOSITION
+            FileSystem::OPEN_EXISTING,
+            FileSystem::FILE_ATTRIBUTE_NORMAL | FileSystem::FILE_FLAG_SEQUENTIAL_SCAN,
+            None,
+        )?
+    };
     info!("Success! Acquired a handle with CreateFileA API");
 
     // lock the volume
@@ -314,9 +324,6 @@ pub fn write_image(image_path: String, disk_path: String, device_id: String) -> 
 
 #[cfg(target_os = "macos")]
 pub fn write_image(image_path: String, disk: String, _deviceId: String) -> Result<()> {
-    use nix::sys::socket;
-    use std::{io::BufWriter, os::unix::io::FromRawFd, os::unix::prelude::RawFd};
-
     let image_file = File::open(&image_path)?;
     let bytes_total = image_file.metadata()?.len();
     // ensure disk is unmounted
@@ -415,7 +422,6 @@ pub fn write_image(image_path: String, disk: String, _deviceId: String) -> Resul
 
     Ok(())
 }
-
 
 // #[cfg(test)]
 // mod tests {

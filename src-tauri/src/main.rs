@@ -7,6 +7,7 @@ use tauri_plugin_log::{LogTarget, LoggerBuilder};
 use printnanny_imager::app;
 use printnanny_imager::disk;
 use printnanny_imager::disklist;
+use printnanny_imager::password;
 
 #[tauri::command]
 async fn list_diskdrive_crossplatform() -> String {
@@ -29,7 +30,10 @@ fn main() {
         .plugin(LoggerBuilder::new().targets(targets).build())
         .invoke_handler(tauri::generate_handler![
             list_diskdrive_crossplatform,
-            write_image
-        ]).run(tauri::generate_context!())
+            password::hash_password,
+            password::compare_password,
+            write_image,
+        ])
+        .run(tauri::generate_context!())
         .expect("error while running tauri application")
 }
