@@ -16,6 +16,7 @@ use {
     std::process::Command,
     serde::{Deserialize, Serialize},
     std::process::Stdio,
+    std::path::PathBuf,
     super::disk::get_windows_drivenum,
 
 };
@@ -64,14 +65,12 @@ pub struct WindowsLogicalDisk {
 #[cfg(target_os = "windows")]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct WindowsMount {
-    #[serde(rename(deserialize = "DeviceIdentifier"))]
+    #[serde(rename(deserialize = "DeviceID"))]
     pub device_id: String,
-    #[serde(rename(deserialize = "DeviceNode"))]
-    pub device_node: String,
-    #[serde(rename(deserialize = "MountPoint"))]
-    pub mountpoint: String,
-    #[serde(rename(deserialize = "Writable"))]
-    pub writable: bool,
+    #[serde(rename(deserialize = "VolumeName"))]
+    pub volume_name: String,
+    #[serde(rename(deserialize = "VolumeDirty"))]
+    pub volume_dirty: bool,
 }
 
 #[cfg(target_os = "windows")]
@@ -196,7 +195,15 @@ fn _write_bootfile(
     filename: String,
     contents: String,
 ) -> Result<(), ImagerError> {
-    unimplemented!("_write_bootfile is not yet implemented on windows")
+    let mountpoint = get_boot_mountpoint(&disk_path)?;
+    let volume = PathBuf::from(&format!("{}\\", mountpoint.device_id)).join(filename);
+    match std::fs::write(&volume, contents){
+        Ok(()) => {
+            info!("Success! Wrote {:?}", &volume);
+            Ok(())
+        },
+        Err(e) => Err(ImagerError::BootfileWrite { path: volume.display().to_string() })
+    }
 }
 
 #[tauri::command(async)]
