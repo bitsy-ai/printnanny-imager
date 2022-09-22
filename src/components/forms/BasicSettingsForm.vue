@@ -162,8 +162,8 @@
                         <Field
                           id="enableSSH"
                           name="enableSSH"
-                          value="enableSSH"
                           type="checkbox"
+                          :value="false"
                           class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                         ></Field>
                       </div>
@@ -203,6 +203,7 @@
                           id="disableSSHPassword"
                           name="disableSSHPassword"
                           type="checkbox"
+                          :value="false"
                           class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                         />
                       </div>
@@ -502,6 +503,7 @@
 </template>
 <script setup lang="ts">
 import { ref } from "vue";
+import { useRouter } from "vue-router";
 import { DialogPanel, DialogTitle } from "@headlessui/vue";
 import * as yup from "yup";
 import { Cog6ToothIcon } from "@heroicons/vue/24/outline";
@@ -518,6 +520,7 @@ configure({
   validateOnModelUpdate: true,
 });
 
+const router = useRouter();
 const store = useSettingsStore();
 const props = defineProps({
   edition: {
@@ -591,6 +594,7 @@ const onSubmit = handleSubmit(async (values: any) => {
   const encryptedFormValues = await store.saveForm(values as CloudInitForm);
   console.log("Encrypted values", encryptedFormValues);
   props.onCancel();
+  router.push({ name: "select-storage" });
 });
 
 function resetSettings() {

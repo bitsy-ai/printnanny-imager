@@ -5,6 +5,7 @@
 use tauri_plugin_log::{LogTarget, LoggerBuilder};
 
 use printnanny_imager::app;
+use printnanny_imager::bootfile;
 use printnanny_imager::disk;
 use printnanny_imager::disklist;
 use printnanny_imager::password;
@@ -32,6 +33,7 @@ fn main() {
             list_diskdrive_crossplatform,
             password::hash_password,
             password::compare_password,
+            bootfile::write_bootfile,
             write_image,
         ])
         .run(tauri::generate_context!())

@@ -9,6 +9,8 @@ import {
   ImageWriteProgressInterface,
 } from "../types";
 import { useStore } from "@/store";
+import { useSettingsStore } from "@/store/settings";
+import { CloudInitGenerator } from "./cloudInit";
 
 async function listRemoveableDisks(): Promise<Array<CrossPlatformDisk>> {
   const output = await invoke("list_diskdrive_crossplatform");
@@ -41,6 +43,51 @@ async function writeImage(disk: CrossPlatformDisk, imagePath: string) {
 
   // clean up listener
   unlisten();
+}
+
+// write /boot/user-data and /boot/network-config
+async function writeBootfiles(disk: CrossPlatformDisk) {
+  console.log("Writing bootfiles to disk", disk);
+  const store = useStore();
+  const settingsStore = useSettingsStore();
+  const progress = new ImageWriteProgress({
+    label: "Finalizing image...",
+    percent: 25,
+  });
+  store.$patch({ progress: progress });
+  if (settingsStore.savedFormValues) {
+    const generator = new CloudInitGenerator(settingsStore.savedFormValues);
+    let filename = CloudInitGenerator.userDataFilename();
+    await invoke("write_bootfile", {
+      diskPath: disk.path,
+      filename: filename,
+      contents: generator.generateUserData(),
+    });
+    console.log(`Success! Wrote ${filename}`);
+    let progress = new ImageWriteProgress({
+      label: "Finalizing image...",
+      percent: 75,
+    });
+    store.$patch({ progress: progress });
+    filename = CloudInitGenerator.networkDataFilename();
+    await invoke("write_bootfile", {
+      diskPath: disk.path,
+      filename: filename,
+      contents: generator.generateNetworkData(),
+    });
+    console.log(`Success! Wrote ${filename}`);
+    progress = new ImageWriteProgress({
+      label: "Finalizing image...",
+      percent: 100,
+    });
+    store.$patch({ progress: progress });
+  } else {
+    const progress = new ImageWriteProgress({
+      label: "Finalizing image...",
+      percent: 100,
+    });
+    store.$patch({ progress: progress });
+  }
 }
 
 async function flashImage(disk: CrossPlatformDisk, imagePath: string) {
@@ -80,4 +127,4 @@ async function flashImage(disk: CrossPlatformDisk, imagePath: string) {
   }
 }
 
-export { listRemoveableDisks, flashImage };
+export { listRemoveableDisks, flashImage, writeBootfiles };

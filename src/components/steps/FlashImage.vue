@@ -26,7 +26,7 @@
 import { computed } from "vue";
 import { useRouter } from "vue-router";
 import { useStore } from "@/store";
-import { flashImage } from "@/utils/disk";
+import { flashImage, writeBootfiles } from "@/utils/disk";
 
 const store = useStore();
 const router = useRouter();
@@ -50,6 +50,7 @@ async function onClick() {
       `Flashing ${store.selectedImageFile} to ${store.selectedDisk.path}`
     );
     await flashImage(store.selectedDisk, store.selectedImageFile);
+    await writeBootfiles(store.selectedDisk);
   }
 }
 </script>
