@@ -1,4 +1,4 @@
-import { stringify } from 'yaml'
+import { stringify } from "yaml";
 import { invoke } from "@tauri-apps/api/tauri";
 
 interface CloudInitForm {
@@ -54,13 +54,13 @@ class CloudInitGenerator implements CloudInitForm {
     this.wifiSSIDHidden = args.wifiSSIDHidden;
   }
 
-  static encryptSensitive(args: CloudInitForm): CloudInitForm {
+  static async encryptSensitive(args: CloudInitForm): Promise<CloudInitForm> {
     const sensitiveFields = ["password", "wifiPassword"];
     // perform a deep copy
     const result = JSON.parse(JSON.stringify(args));
-    sensitiveFields.forEach((field) => {
-      result[field] = CloudInitGenerator.hashPassword(result[field]);
-    });
+    await Promise.all(sensitiveFields.map(async (field) => {
+      result[field] = await CloudInitGenerator.hashPassword(result[field]);
+    }));
     return result;
   }
 

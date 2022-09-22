@@ -1,4 +1,4 @@
-import { describe, expect, test, jest } from "@jest/globals";
+import { beforeAll, expect, test, describe, vitest } from "vitest";
 import { mockIPC } from "@tauri-apps/api/mocks";
 
 import { CloudInitGenerator } from "../src/utils/cloudInit";
@@ -24,7 +24,6 @@ describe("CloudInitGenerator", () => {
 
   beforeAll(() => {
     mockIPC((cmd, args) => {
-      // simulated rust command called "add" that just adds two numbers
       if (cmd === "hash_password") {
         return args.password + "fakehashed";
       }
@@ -42,7 +41,7 @@ describe("CloudInitGenerator", () => {
 
   test("should hash password", async () => {
     const hashed = await CloudInitGenerator.hashPassword(baseFormData.password);
-    const spy = jest.spyOn(window, "__TAURI_IPC__");
+    const spy = vitest.spyOn(window, "__TAURI_IPC__");
     expect(
       await CloudInitGenerator.comparePassword(baseFormData.password, hashed)
     ).toEqual(true);
@@ -66,18 +65,20 @@ describe("CloudInitGenerator", () => {
     expect(yamlData).toMatchSnapshot();
   });
 
-  test("should encrypt all sensitive fields", () => {
-    const encrypted = CloudInitGenerator.encryptSensitive(baseFormData);
+  test("should encrypt all sensitive fields", async () => {
+    const spy = vitest.spyOn(window, "__TAURI_IPC__");
+    const encrypted = await CloudInitGenerator.encryptSensitive(baseFormData);
     expect(encrypted.password).not.toEqual(baseFormData.password);
     expect(encrypted.wifiPassword).not.toEqual(baseFormData.wifiPassword);
+    expect(spy).toHaveBeenCalled();
     expect(
-      CloudInitGenerator.comparePassword(
+      await CloudInitGenerator.comparePassword(
         baseFormData.password,
         encrypted.password
       )
     ).toBe(true);
     expect(
-      CloudInitGenerator.comparePassword(
+      await CloudInitGenerator.comparePassword(
         baseFormData.wifiPassword,
         encrypted.wifiPassword
       )
