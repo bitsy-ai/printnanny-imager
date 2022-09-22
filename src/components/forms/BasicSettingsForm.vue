@@ -38,7 +38,7 @@
         </div>
       </div>
       <div class="container m-auto">
-        <form class="space-y-8 divide-y divide-gray-200" @submit="onSubmit">
+        <form class="space-y-8 divide-y divide-gray-200" @submit.prevent="onSubmit">
           <div class="space-y-8 divide-y divide-gray-200">
             <div class="space-y-8 divide-y divide-gray-200">
               <div class="pt-8">
@@ -96,12 +96,16 @@
                         </div>
                       </div>
                     </div>
+                    <ErrorMessage
+                      name="username"
+                      class="text-sm text-red-500"
+                    />
                   </div>
                   <div class="sm:col-span-3">
                     <div class="mt-1">
                       <div class="sm:col-span-3">
                         <label
-                          for="wifiPassword"
+                          for="password"
                           class="block text-sm font-medium text-gray-700"
                           >Password</label
                         >
@@ -144,6 +148,10 @@
                         </div>
                       </div>
                     </div>
+                    <ErrorMessage
+                      name="password"
+                      class="text-sm text-red-500"
+                    />
                   </div>
                   <div class="sm:col-span-6">
                     <div class="relative flex items-start">
@@ -571,10 +579,10 @@ const { handleSubmit, resetForm } = useForm({
   initialValues: store.savedFormValues || {},
 });
 
-const onSubmit = handleSubmit((values: any) => {
+const onSubmit = handleSubmit(async (values: any) => {
   console.log("Form was submitted with values", values);
 
-  const encryptedFormValues = store.saveForm(values as CloudInitForm);
+  const encryptedFormValues = await store.saveForm(values as CloudInitForm);
   console.log("Encrypted values", encryptedFormValues);
 });
 
