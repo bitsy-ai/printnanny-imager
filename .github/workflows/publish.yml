@@ -31,7 +31,6 @@ jobs:
     - name: install app dependencies and build it
       run: npm install && npm run build
     - uses: tauri-apps/tauri-action@v0
-      if: matrix.platform == 'macos-latest'
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         ENABLE_CODE_SIGNING: ${{ secrets.APPLE_CERTIFICATE }}
