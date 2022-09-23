@@ -139,6 +139,8 @@
 import { ref, computed } from "vue";
 import { useRouter } from "vue-router";
 import { useStore } from "@/store";
+import { ExclamationTriangleIcon } from "@heroicons/vue/24/outline";
+
 import {
   Dialog,
   DialogPanel,
@@ -148,6 +150,8 @@ import {
 } from "@headlessui/vue";
 import CustomSpinner from "../spinner/CustomSpinner.vue";
 import { truncate } from "@/utils/text";
+import { ResetAction } from "@/utils/error";
+import { UiAlert } from "@/types";
 
 const router = useRouter();
 const key = "select-storage";
@@ -164,7 +168,19 @@ function onSelect() {
 
 const onClick = async () => {
   show.value = true;
-  await store.listRemoveableDrives();
+  const disks = await store.listRemoveableDrives();
+  if (disks.length == 0) {
+    const header = "No devices found";
+    const message =
+      "No removable devices (USB, SD Card Reader) detected. \n Try removing and re-inserting the device.";
+    const alert = {
+      header,
+      message,
+      actions: [ResetAction],
+      icon: ExclamationTriangleIcon,
+    } as UiAlert;
+    store.showError(alert);
+  }
 };
 
 function clearSelection() {
