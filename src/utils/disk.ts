@@ -11,6 +11,7 @@ import {
 import { useStore } from "@/store";
 import { useSettingsStore } from "@/store/settings";
 import { CloudInitGenerator } from "./cloudInit";
+import { showError } from "./error";
 
 async function listRemoveableDisks(): Promise<Array<CrossPlatformDisk>> {
   const output = await invoke("list_diskdrive_crossplatform");
@@ -38,7 +39,7 @@ async function writeImage(disk: CrossPlatformDisk, imagePath: string) {
     imagePath: imagePath,
     diskPath: disk.path,
     deviceId: disk.deviceId,
-  });
+  }).catch(showError);
   console.log(`Finished writing ${imagePath} to ${disk.path}`);
 
   // clean up listener
@@ -62,7 +63,7 @@ async function writeBootfiles(disk: CrossPlatformDisk) {
       diskPath: disk.path,
       filename: filename,
       contents: generator.generateUserData(),
-    });
+    }).catch(showError);
     console.log(`Success! Wrote ${filename}`);
     let progress = new ImageWriteProgress({
       label: "Finalizing image...",
@@ -74,7 +75,7 @@ async function writeBootfiles(disk: CrossPlatformDisk) {
       diskPath: disk.path,
       filename: filename,
       contents: generator.generateNetworkData(),
-    });
+    }).catch(showError);
     console.log(`Success! Wrote ${filename}`);
     progress = new ImageWriteProgress({
       label: "Finalizing image...",

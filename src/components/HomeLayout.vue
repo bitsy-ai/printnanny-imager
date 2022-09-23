@@ -1,6 +1,7 @@
 <template>
   <div class="flex grid grid-rows-3 max-h-screen">
     <div class="flex-1 row-span-1 bg-stone-50">
+      <StickyAlerts />
       <img
         src="@/assets/logo/logo-rect-light.svg"
         class="m-auto h-full pt-2 pb-2"
@@ -103,6 +104,7 @@ import {
   Cog6ToothIcon as CogToothSolid,
 } from "@heroicons/vue/24/solid";
 import ProgressBar from "@/components/steps/ProgressBar.vue";
+import StickyAlerts from "@/components/alerts/StickyAlerts.vue";
 
 const router = useRouter();
 const steps = [

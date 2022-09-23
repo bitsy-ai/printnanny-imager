@@ -1,3 +1,19 @@
+import type { FunctionalComponent, HTMLAttributes, VNodeProps } from "vue";
+
+interface AlertAction {
+  color: string;
+  text: string;
+  onClick: () => void;
+}
+
+interface UiAlert {
+  message: string;
+  header: string;
+  icon?: FunctionalComponent<HTMLAttributes & VNodeProps>;
+  actions: Array<AlertAction>;
+  error: Error | undefined | string;
+}
+
 type SingleBoardComputer = {
   enabled: boolean;
   key: string;
@@ -104,6 +120,8 @@ export type {
   SingleBoardComputer,
   OperatingSystem,
   ImageWriteProgressInterface,
+  UiAlert,
+  AlertAction,
 };
 
 export { CrossPlatformDisk, ImageWriteProgress };

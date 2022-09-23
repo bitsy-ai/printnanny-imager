@@ -1,5 +1,6 @@
 import { stringify } from "yaml";
 import { invoke } from "@tauri-apps/api/tauri";
+import { showError } from "@/utils/error";
 
 interface CloudInitForm {
   disableSSHPassword: boolean;
@@ -59,12 +60,14 @@ class CloudInitGenerator implements CloudInitForm {
     const result = JSON.parse(JSON.stringify(args));
 
     if (result.password !== undefined) {
-      result.password = await CloudInitGenerator.hashPassword(result.password);
+      result.password = await CloudInitGenerator.hashPassword(
+        result.password
+      ).catch(showError);
     }
     if (result.wifiPassword !== undefined) {
       result.wifiPassword = await CloudInitGenerator.hashPassword(
         result.wifiPassword
-      );
+      ).catch(showError);
     }
     return result;
   }
